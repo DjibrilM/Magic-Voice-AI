@@ -47,7 +47,7 @@ export interface DialogueRoundCardProps {
   onOpenCloneModal: () => void
   onOpenExplorerModal?: () => void
   onInsertPauseTag: (tag: string) => void
-  engine?: 'cosyvoice3' | 'chatterbox'
+  engine?: 'cosyvoice3'
   disableEnterAnimation?: boolean
 }
 
@@ -347,7 +347,7 @@ export function DialogueRoundCard({
               <div className="flex items-center justify-between px-2 py-1.5 text-[11px] font-medium text-zinc-400 border-b border-[#27272a] mb-1">
                 <span>Voice Emotion</span>
                 <span className="text-[9px] text-zinc-500 font-mono">
-                  {engine === 'cosyvoice3' ? 'CosyVoice 3 (4)' : 'Chatterbox T3'}
+                  CosyVoice 3 (4)
                 </span>
               </div>
               {activeEmotions.map((e) => (

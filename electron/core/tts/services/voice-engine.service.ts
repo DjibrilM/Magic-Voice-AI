@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { execFileSync } from "node:child_process";
+import { app } from "electron";
 import * as qvacSdk from "@qvac/sdk";
 
 import type {
@@ -71,13 +72,14 @@ function computePeaks(samples: number[], count: number): number[] {
 }
 
 /**
- * Writes raw PCM samples to a playable WAV file under assets/testing-voice-output.
- * Used for diagnostic inspection of QVAC's raw output before WAV encoding.
+ * Writes raw PCM samples to a playable WAV file under the media destination directory
+ * and assets/testing-voice-output for diagnostic playback.
  */
 function savePcmAsWavFile(
   samples: number[],
   sampleRate: number,
   label: string,
+  targetDir?: string,
 ): string {
   sampleRate = Number.isFinite(sampleRate) && sampleRate > 0 ? Math.round(sampleRate) : 24000;
   const numSamples = samples.length;
@@ -106,15 +108,35 @@ function savePcmAsWavFile(
   }
   const maxAbs = samples.reduce((max, sample) => Math.max(max, Math.abs(sample)), 0);
 
-  const dir = path.resolve(process.cwd(), "assets/testing-voice-output");
-  fs.mkdirSync(dir, { recursive: true });
   const fileName = `${label}-${Date.now()}.wav`;
-  const filePath = path.join(dir, fileName);
-  fs.writeFileSync(filePath, buffer);
+  let primaryFilePath = "";
+
+  // 1. Primary destination: user-configured media exports folder
+  if (targetDir) {
+    try {
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+      primaryFilePath = path.join(targetDir, fileName);
+      fs.writeFileSync(primaryFilePath, buffer);
+    } catch (err) {
+      console.warn("[TTS] Failed to save to media destination folder:", err);
+    }
+  }
+
+  // 2. Also save to local assets/testing-voice-output cache
+  try {
+    const dir = path.resolve(process.cwd(), "assets/testing-voice-output");
+    fs.mkdirSync(dir, { recursive: true });
+    const localFilePath = path.join(dir, fileName);
+    fs.writeFileSync(localFilePath, buffer);
+    if (!primaryFilePath) primaryFilePath = localFilePath;
+  } catch {}
+
   console.log(
-    `[TTS Debug] Saved PCM to ${filePath} (${numSamples} samples @ ${sampleRate}Hz, maxAbs=${maxAbs.toFixed(4)})`,
+    `[TTS Debug] Saved PCM to ${primaryFilePath} (${numSamples} samples @ ${sampleRate}Hz, maxAbs=${maxAbs.toFixed(4)})`,
   );
-  return filePath;
+  return primaryFilePath;
 }
 
 interface TextOrPauseSegment {
@@ -258,13 +280,9 @@ interface ProcessedSpeechResult {
  * Translates cues to native FunAudioLLM instruct tags (<laughter>, <strong>, <breath>)
  * as specified in FunAudioLLM/CosyVoice #191, which work both in zero-shot base mode
  * and with custom cloned voices.
- *
- * For Chatterbox T3:
- * Cleans XML tags and uses natural punctuation, pauses, and ellipses for speech conditioning.
  */
 function processConversationalCues(
   text: string,
-  engine: "cosyvoice3" | "chatterbox",
   initialTone: "normal" | "whisper" | "yell" | "raise" = "normal"
 ): ProcessedSpeechResult {
   let cleaned = text;
@@ -309,68 +327,39 @@ function processConversationalCues(
     detectedCues.push("gasp");
   }
 
-  if (engine === "cosyvoice3") {
-    // ----------------------------------------------------
-    // CosyVoice 3: Native Instruct Tags (<strong>, <breath>)
-    // ----------------------------------------------------
+  // ----------------------------------------------------
+  // CosyVoice 3: Native Instruct Tags (<strong>, <breath>)
+  // ----------------------------------------------------
 
-    // 1. Breath / Sigh:
-    // Convert [breath] or [sigh] to native <breath>
-    cleaned = cleaned.replace(/\[(?:breath|sigh)\]/gi, " <breath> ");
+  // 1. Breath / Sigh:
+  // Convert [breath] or [sigh] to native <breath>
+  cleaned = cleaned.replace(/\[(?:breath|sigh)\]/gi, " <breath> ");
 
-    // 2. Emphasis / Strong:
-    // Convert wrapped [raise]...[/raise] or [emphasis]...[/emphasis] to <strong>...</strong>
-    cleaned = cleaned.replace(
-      /\[(?:raise|emphasis)\]([\s\S]*?)\[\/(?:raise|emphasis)\]/gi,
-      "<strong>$1</strong>"
-    );
-    // If tone was raised or isolated [raise] is used, wrap with <strong> if not already wrapped
-    if (tone === "raise" && !/<strong>[\s\S]*?<\/strong>/i.test(cleaned)) {
-      cleaned = `<strong>${cleaned.trim()}</strong>`;
-    }
-    cleaned = cleaned.replace(/\[\/?(?:raise|emphasis)\]/gi, " ");
+  // 2. Emphasis / Strong:
+  // Convert wrapped [raise]...[/raise] or [emphasis]...[/emphasis] to <strong>...</strong>
+  cleaned = cleaned.replace(
+    /\[(?:raise|emphasis)\]([\s\S]*?)\[\/(?:raise|emphasis)\]/gi,
+    "<strong>$1</strong>"
+  );
+  // If tone was raised or isolated [raise] is used, wrap with <strong> if not already wrapped
+  if (tone === "raise" && !/<strong>[\s\S]*?<\/strong>/i.test(cleaned)) {
+    cleaned = `<strong>${cleaned.trim()}</strong>`;
+  }
+  cleaned = cleaned.replace(/\[\/?(?:raise|emphasis)\]/gi, " ");
 
-    // 3. Reactions:
-    cleaned = cleaned.replace(/\[(?:hmm+|thinking)\]/gi, "Hmm... ");
-    cleaned = cleaned.replace(/\[gasp\]/gi, "<breath> ");
+  // 3. Reactions:
+  cleaned = cleaned.replace(/\[(?:hmm+|thinking)\]/gi, "Hmm... ");
+  cleaned = cleaned.replace(/\[gasp\]/gi, "<breath> ");
 
-    // Clean multiple consecutive duplicate tags or spaces
-    cleaned = cleaned
-      .replace(/(?:<breath>\s*)+<breath>/gi, "<breath>")
-      .replace(/\s+/g, " ")
-      .trim();
+  // Clean multiple consecutive duplicate tags or spaces
+  cleaned = cleaned
+    .replace(/(?:<breath>\s*)+<breath>/gi, "<breath>")
+    .replace(/\s+/g, " ")
+    .trim();
 
-    // Pad whisper with gentle breath pauses
-    if (tone === "whisper" && cleaned.length > 0) {
-      cleaned = `<breath> ${cleaned.toLowerCase()} <breath>`;
-    }
-  } else {
-    // ----------------------------------------------------
-    // Chatterbox T3: Strip XML markup & condition via natural punctuation / ellipses
-    // ----------------------------------------------------
-    cleaned = cleaned.replace(/<\/?(?:laughter|strong|breath)>/gi, " ");
-    cleaned = cleaned.replace(
-      /\[\/?(?:laugh|laughter|giggle|chuckle|breath|sigh|gasp|whisper|soft|yell|shout|loud|raise|emphasis)\]/gi,
-      " "
-    );
-
-    if (detectedCues.includes("hmm")) {
-      cleaned = cleaned.replace(/\[(?:hmm+|thinking)\]/gi, "Hmm... ");
-    }
-
-    if (detectedCues.includes("breath") || detectedCues.includes("sigh") || detectedCues.includes("gasp")) {
-      cleaned = cleaned.replace(/\[(?:breath|sigh|gasp)\]/gi, "... ");
-    }
-
-    if (tone === "raise") {
-      cleaned = cleaned.toUpperCase();
-    }
-
-    cleaned = cleaned.replace(/\s+/g, " ").replace(/\.{4,}/g, "...").trim();
-
-    if (tone === "whisper" && cleaned.length > 0) {
-      cleaned = `... ${cleaned.toLowerCase()} ...`;
-    }
+  // Pad whisper with gentle breath pauses
+  if (tone === "whisper" && cleaned.length > 0) {
+    cleaned = `<breath> ${cleaned.toLowerCase()} <breath>`;
   }
 
   return { cleanedText: cleaned, detectedCues, tone };
@@ -518,29 +507,88 @@ function parseTextAndPauses(rawText: string): TextOrPauseSegment[] {
 }
 
 /**
- * Resolves a reference audio input (URL path, relative path, or absolute path)
- * and ensures it is converted to a 24kHz 16-bit mono PCM WAV file required
- * by QVAC/dr_wav for CosyVoice 3 voice cloning and speaker embeddings.
+ * Resolves a reference audio input (`echo-media://`, `file://`, `/voices/...`, relative path, or absolute path)
+ * across development and packaged builds, and ensures it is converted to a 24kHz 16-bit mono PCM WAV file
+ * on the real OS filesystem required by QVAC/dr_wav for CosyVoice 3 voice cloning and speaker embeddings.
  */
 function prepareReferenceAudioWav(inputPath?: string): string | undefined {
   if (!inputPath || typeof inputPath !== "string") return undefined;
 
-  let resolved = inputPath;
-  if (!fs.existsSync(resolved)) {
-    const pub = path.resolve(process.cwd(), "public", inputPath.replace(/^\//, ""));
-    if (fs.existsSync(pub)) resolved = pub;
+  let cleanedInput = inputPath.trim();
+  if (cleanedInput.startsWith("echo-media://")) {
+    const raw = decodeURIComponent(cleanedInput.replace(/^echo-media:\/\//, ""));
+    cleanedInput = raw.startsWith("/") ? raw : `/${raw}`;
+  } else if (cleanedInput.startsWith("file://")) {
+    cleanedInput = decodeURIComponent(cleanedInput.replace(/^file:\/\//, ""));
   }
-  if (!fs.existsSync(resolved)) {
-    const ws = path.resolve(process.cwd(), inputPath);
-    if (fs.existsSync(ws)) resolved = ws;
+
+  const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
+  const publicDir = process.env.VITE_PUBLIC || path.join(process.cwd(), "public");
+  const appPath = app ? app.getAppPath() : process.cwd();
+  const userDataDir = app ? app.getPath("userData") : "";
+  const relNoLeadingSlash = cleanedInput.replace(/^\.?\//, "");
+  const relUnderVoices = relNoLeadingSlash.replace(/^voices\//, "");
+
+  const candidatePaths: string[] = [
+    cleanedInput,
+    ...(resourcesPath
+      ? [
+          path.join(resourcesPath, "app.asar.unpacked", relNoLeadingSlash),
+          path.join(resourcesPath, "app.asar.unpacked", "voices", relUnderVoices),
+          path.join(resourcesPath, "app.asar.unpacked", "dist", relNoLeadingSlash),
+          path.join(resourcesPath, "voices", relUnderVoices),
+        ]
+      : []),
+    ...(userDataDir
+      ? [
+          path.join(userDataDir, relNoLeadingSlash),
+          path.join(userDataDir, "voices", relUnderVoices),
+        ]
+      : []),
+    path.join(publicDir, relNoLeadingSlash),
+    path.join(appPath, "dist", relNoLeadingSlash),
+    path.join(appPath, "public", relNoLeadingSlash),
+    path.resolve(process.cwd(), "public", relNoLeadingSlash),
+    path.resolve(process.cwd(), cleanedInput),
+  ];
+
+  let resolved: string | undefined;
+  for (const candidate of candidatePaths) {
+    try {
+      if (candidate && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        resolved = candidate;
+        break;
+      }
+    } catch {
+      // ignore
+    }
   }
-  if (!fs.existsSync(resolved)) return undefined;
+
+  if (!resolved) return undefined;
+
+  const cacheDir = path.join(os.tmpdir(), "echo-voice-cache");
+  fs.mkdirSync(cacheDir, { recursive: true });
+
+  // If the file resides inside an .asar archive, extract it to cacheDir first so external
+  // binaries (afconvert) and native C++/Bare workers (@qvac/sdk) can read it from disk.
+  if (resolved.includes(".asar")) {
+    try {
+      const extInAsar = path.extname(resolved).toLowerCase() || ".mp3";
+      const extractedPath = path.join(cacheDir, `asar_${path.basename(resolved, extInAsar)}${extInAsar}`);
+      if (!fs.existsSync(extractedPath)) {
+        const data = fs.readFileSync(resolved);
+        fs.writeFileSync(extractedPath, data);
+      }
+      resolved = extractedPath;
+    } catch (err) {
+      console.warn(`[Echo Voice Engine] Failed to extract ${resolved} from asar:`, err);
+      return undefined;
+    }
+  }
 
   const ext = path.extname(resolved).toLowerCase();
   if (ext === ".wav") return resolved;
 
-  const cacheDir = path.join(os.tmpdir(), "echo-voice-cache");
-  fs.mkdirSync(cacheDir, { recursive: true });
   const stat = fs.statSync(resolved);
   const outName = `${path.basename(resolved, ext)}_${stat.size}_${Math.floor(stat.mtimeMs)}.wav`;
   const outPath = path.join(cacheDir, outName);
@@ -579,9 +627,35 @@ export class VoiceEngineService {
   private modelsService: ModelsService;
   private loadedModels: Map<string, string> = new Map();
   private activeTtsRequestIds: Map<string, string> = new Map();
+  private mediaDestinationFolder?: string;
+  private inferenceDevice: "gpu" | "cpu" = "gpu";
 
   constructor(modelsService?: ModelsService) {
     this.modelsService = modelsService || new ModelsService();
+  }
+
+  public setInferenceDevice(device: "gpu" | "cpu"): void {
+    if (this.inferenceDevice !== device) {
+      this.inferenceDevice = device;
+      for (const modelId of this.loadedModels.values()) {
+        try {
+          (qvacSdk as any).unloadModel?.({ modelId });
+        } catch {}
+      }
+      this.loadedModels.clear();
+    }
+  }
+
+  public getInferenceDevice(): "gpu" | "cpu" {
+    return this.inferenceDevice;
+  }
+
+  public setMediaDestinationFolder(dir: string): void {
+    this.mediaDestinationFolder = dir;
+  }
+
+  public getMediaDestinationFolder(): string | undefined {
+    return this.mediaDestinationFolder;
   }
 
   public getModelsService(): ModelsService {
@@ -614,7 +688,7 @@ export class VoiceEngineService {
   /**
    * Get complete status of all voice engine models
    */
-  public getStatus(selectedEngine?: "cosyvoice3" | "chatterbox"): VoiceModelStatusResult {
+  public getStatus(selectedEngine?: "cosyvoice3"): VoiceModelStatusResult {
     return this.modelsService.getStatus(selectedEngine);
   }
 
@@ -637,10 +711,10 @@ export class VoiceEngineService {
 
 
   /**
-   * Ensures the requested engine (CosyVoice 3 or Chatterbox T3) is loaded with configuration.
+   * Ensures the CosyVoice 3 engine is loaded with the configured device (GPU / CPU) and voice profile.
    */
   private async ensureModelLoaded(opts: {
-    engine?: "cosyvoice3" | "chatterbox";
+    engine?: "cosyvoice3";
     language?: string;
     lavaSrEnabled?: boolean;
     instruct?: string;
@@ -650,213 +724,117 @@ export class VoiceEngineService {
     taskId: string;
     onProgress?: TtsProgressCallback;
     onLog?: TtsLogCallback;
-  }): Promise<{ modelId: string; engine: "cosyvoice3" | "chatterbox" }> {
-    const engine: "cosyvoice3" | "chatterbox" = opts.engine || "cosyvoice3";
+  }): Promise<{ modelId: string; engine: "cosyvoice3" }> {
     const lavaSr = opts.lavaSrEnabled !== false && this.modelsService.isModelDownloaded("lavasr-enhancer");
     const lavasrSrc = (qvacSdk as any).TTS_ENHANCER_LAVASR_FP16;
 
-    if (engine === "chatterbox") {
-      const isMultilingual =
-        opts.language &&
-        opts.language !== "en" &&
-        this.modelsService.isModelDownloaded("chatterbox-t3-multilingual-q8_0") &&
-        this.modelsService.isModelDownloaded("chatterbox-s3gen-multilingual-q8_0");
+    // CosyVoice 3
+    const cosyvoiceDescriptor =
+      (qvacSdk as any).TTS_COSYVOICE3_LLM_COSYVOICE_Q8_0 ||
+      (qvacSdk as any).TTS_COSYVOICE3_LLM_COSYVOICE_Q4_0;
 
-      let t3Descriptor = isMultilingual
-        ? (qvacSdk as any).TTS_T3_MULTILINGUAL_CHATTERBOX_Q8_0
-        : (qvacSdk as any).TTS_T3_TURBO_EN_CHATTERBOX_Q8_0;
-
-      let s3genDescriptor = isMultilingual
-        ? (qvacSdk as any).TTS_S3GEN_MULTILINGUAL_CHATTERBOX_Q8_0
-        : (qvacSdk as any).TTS_S3GEN_EN_CHATTERBOX_Q8_0;
-
-      const chatterboxModelLabel = isMultilingual
-        ? "Chatterbox T3 Multilingual (Q8_0 GGUF)"
-        : "Chatterbox T3 Turbo EN (Q8_0 GGUF)";
-
-      if (!t3Descriptor || !s3genDescriptor) {
-        throw new Error("QVAC Chatterbox descriptors (T3 and/or S3Gen) missing from SDK");
-      }
-
-      // Chatterbox uses a reference audio WAV for voice cloning
-      let refWavPath = getValidReferenceWav(opts.referenceAudioSrc);
-      if (!refWavPath) {
-        const defaultVoice = path.resolve(process.cwd(), "public", "voices", "samples", "en", "voice_en_male_1.mp3");
-        if (fs.existsSync(defaultVoice)) {
-          refWavPath = prepareReferenceAudioWav(defaultVoice);
-        }
-      }
-
-      const key = [
-        "chatterbox",
-        isMultilingual ? "multilingual" : "en",
-        refWavPath ? path.basename(refWavPath) : "default",
-        lavaSr ? "lavasr48k" : "native24k",
-        process.arch === "arm64" ? "metal" : "cpu",
-      ].join("|");
-
-      const cachedModelId = this.loadedModels.get(key);
-      if (cachedModelId) {
-        return { modelId: cachedModelId, engine: "chatterbox" };
-      }
-
-      opts.onLog?.({
-        text: `[Echo Voice Engine] Loading ${chatterboxModelLabel} + S3Gen Vocoder (${lavaSr ? "48kHz LavaSR" : "24kHz native"}${process.arch === "arm64" ? " +Metal GPU" : " +CPU"})...`,
-        stream: "stdout",
-      });
-
-      const baseConfig: any = {
-        ttsEngine: "chatterbox",
-        language: opts.language || "en",
-        s3genModelSrc: s3genDescriptor?.src || s3genDescriptor,
-        streamChunkTokens: 25,
-        streamFirstChunkTokens: 10,
-        cfmSteps: 1,
-        threads: 8,
-        useGPU: process.arch === "arm64",
-        seed: 42,
-        ...(refWavPath ? { referenceAudioSrc: refWavPath } : {}),
-        ...(lavaSr && lavasrSrc ? { lavasrEnhancerModelSrc: lavasrSrc } : {}),
-      };
-
-      const modelId = await (qvacSdk as any).loadModel({
-        modelSrc: t3Descriptor,
-        modelType: "tts",
-        modelConfig: baseConfig,
-        onProgress: (p: any) => {
-          const pct = Math.round(p?.percentage ?? 0);
-          opts.onProgress?.({
-            taskId: opts.taskId,
-            progress: Math.min(40, Math.round(pct * 0.4)),
-            message: `Loading ${chatterboxModelLabel} weights ${pct}%...`,
-            phase: "loading",
-          });
-        },
-      });
-
-      if (this.loadedModels.size >= 4) {
-        const oldestKey = this.loadedModels.keys().next().value;
-        if (oldestKey) {
-          const oldId = this.loadedModels.get(oldestKey);
-          if (oldId) {
-            try {
-              await (qvacSdk as any).unloadModel?.({ modelId: oldId });
-            } catch {}
-          }
-          this.loadedModels.delete(oldestKey);
-        }
-      }
-
-      this.loadedModels.set(key, modelId);
-      return { modelId, engine: "chatterbox" };
-    } else {
-      // CosyVoice 3
-      const cosyvoiceDescriptor =
-        (qvacSdk as any).TTS_COSYVOICE3_LLM_COSYVOICE_Q8_0 ||
-        (qvacSdk as any).TTS_COSYVOICE3_LLM_COSYVOICE_Q4_0;
-
-      if (!cosyvoiceDescriptor) {
-        throw new Error("QVAC CosyVoice 3 descriptor missing from SDK");
-      }
-
-      const rawEmotion = opts.emotion?.toLowerCase() || "";
-      const validEmotions = ["anger", "happy", "neutral", "sad"];
-      const emotion = validEmotions.includes(rawEmotion)
-        ? rawEmotion
-        : undefined;
-
-      let refWavPath = getValidReferenceWav(opts.referenceAudioSrc);
-      if (!refWavPath) {
-        // High quality default reference voice ensures CAM++ speaker encoder and S3Tok conditioning
-        // are activated, avoiding muffled, noisy zero-shot unconditioned audio.
-        const defaultCandidates = [
-          path.resolve(process.cwd(), "public", "voices", "samples", "en", "voice_en_male_1.mp3"),
-          path.resolve(process.cwd(), "public", "voices", "samples", "en", "voice_en_female_1.mp3"),
-        ];
-        for (const candidate of defaultCandidates) {
-          if (fs.existsSync(candidate)) {
-            refWavPath = prepareReferenceAudioWav(candidate);
-            if (refWavPath) break;
-          }
-        }
-      }
-      const hasCloningModels =
-        (this.modelsService.isModelDownloaded("cosyvoice3-s3tok-fp16") ||
-          this.modelsService.isModelDownloaded("cosyvoice3-s3tok")) &&
-        (this.modelsService.isModelDownloaded("cosyvoice3-campplus-fp32") ||
-          this.modelsService.isModelDownloaded("cosyvoice3-campplus"));
-
-      console.log(
-        `[Echo Voice Engine] CosyVoice 3 setup: refWavPath=${refWavPath}, hasCloningModels=${hasCloningModels}`,
-      );
-
-      const key = [
-        "cosyvoice3",
-        refWavPath || "native",
-        emotion || "none",
-        lavaSr ? "lavasr48k" : "native24k",
-      ].join("|");
-
-      const cachedModelId = this.loadedModels.get(key);
-      if (cachedModelId) {
-        return { modelId: cachedModelId, engine: "cosyvoice3" };
-      }
-
-      const voiceDesc = refWavPath ? ` voice="${path.basename(refWavPath)}"` : " (native studio voice)";
-      const emotionDesc = emotion ? ` emotion="${emotion}"` : "";
-      opts.onLog?.({
-        text: `[Echo Voice Engine] Loading CosyVoice 3 Engine (0.5B Q8_0 [FP32 Flow Matching]${lavaSr ? " +LavaSR 48kHz" : ""}${voiceDesc}${emotionDesc})...`,
-        stream: "stdout",
-      });
-
-      const baseConfig: any = {
-        ttsEngine: "cosyvoice3",
-        useGPU: true,
-        seed: 42,
-        ...(refWavPath && hasCloningModels
-          ? {
-              cosyvoice3S3tokModelSrc: (qvacSdk as any).TTS_COSYVOICE3_S3TOK_COSYVOICE_FP16,
-              cosyvoice3CampplusModelSrc: (qvacSdk as any).TTS_COSYVOICE3_CAMPPLUS_COSYVOICE_FP32,
-              referenceAudioSrc: refWavPath,
-            }
-          : {}),
-        ...(lavaSr && lavasrSrc
-          ? { lavasrEnhancerModelSrc: lavasrSrc }
-          : {}),
-        ...(emotion ? { emotion } : {}),
-      };
-
-      const modelId = await (qvacSdk as any).loadModel({
-        modelSrc: cosyvoiceDescriptor,
-        modelType: "tts",
-        modelConfig: baseConfig,
-        onProgress: (p: any) => {
-          const pct = Math.round(p?.percentage ?? 0);
-          opts.onProgress?.({
-            taskId: opts.taskId,
-            progress: Math.min(40, Math.round(pct * 0.4)),
-            message: `Loading CosyVoice 3 weights ${pct}%...`,
-            phase: "loading",
-          });
-        },
-      });
-
-      if (this.loadedModels.size >= 4) {
-        const oldestKey = this.loadedModels.keys().next().value;
-        if (oldestKey) {
-          const oldId = this.loadedModels.get(oldestKey);
-          if (oldId) {
-            try {
-              await (qvacSdk as any).unloadModel?.({ modelId: oldId });
-            } catch {}
-          }
-          this.loadedModels.delete(oldestKey);
-        }
-      }
-
-      this.loadedModels.set(key, modelId);
-      return { modelId, engine: "cosyvoice3" };
+    if (!cosyvoiceDescriptor) {
+      throw new Error("QVAC CosyVoice 3 descriptor missing from SDK");
     }
+
+    const rawEmotion = opts.emotion?.toLowerCase() || "";
+    const validEmotions = ["anger", "happy", "neutral", "sad"];
+    const emotion = validEmotions.includes(rawEmotion)
+      ? rawEmotion
+      : undefined;
+
+    let refWavPath = getValidReferenceWav(opts.referenceAudioSrc);
+    if (!refWavPath) {
+      // High quality default reference voice ensures CAM++ speaker encoder and S3Tok conditioning
+      // are activated, avoiding muffled, noisy zero-shot unconditioned audio.
+      const defaultCandidates = [
+        "/voices/samples/en/voice_en_male_1.mp3",
+        "/voices/samples/en/voice_en_female_1.mp3",
+      ];
+      for (const candidate of defaultCandidates) {
+        refWavPath = prepareReferenceAudioWav(candidate);
+        if (refWavPath) break;
+      }
+    }
+    const hasCloningModels =
+      (this.modelsService.isModelDownloaded("cosyvoice3-s3tok-fp16") ||
+        this.modelsService.isModelDownloaded("cosyvoice3-s3tok")) &&
+      (this.modelsService.isModelDownloaded("cosyvoice3-campplus-fp32") ||
+        this.modelsService.isModelDownloaded("cosyvoice3-campplus"));
+
+    console.log(
+      `[Echo Voice Engine] CosyVoice 3 setup: refWavPath=${refWavPath}, hasCloningModels=${hasCloningModels}, device=${this.inferenceDevice}`,
+    );
+
+    const key = [
+      "cosyvoice3",
+      refWavPath || "native",
+      emotion || "none",
+      lavaSr ? "lavasr48k" : "native24k",
+      this.inferenceDevice,
+    ].join("|");
+
+    const cachedModelId = this.loadedModels.get(key);
+    if (cachedModelId) {
+      return { modelId: cachedModelId, engine: "cosyvoice3" };
+    }
+
+    const voiceDesc = refWavPath ? ` voice="${path.basename(refWavPath)}"` : " (native studio voice)";
+    const emotionDesc = emotion ? ` emotion="${emotion}"` : "";
+    const deviceLabel = this.inferenceDevice === "gpu" ? "GPU (Metal)" : "CPU";
+    opts.onLog?.({
+      text: `[Echo Voice Engine] Loading CosyVoice 3 Engine (0.5B Q8_0 [FP32 Flow Matching]${lavaSr ? " +LavaSR 48kHz" : ""}${voiceDesc}${emotionDesc} [${deviceLabel}])...`,
+      stream: "stdout",
+    });
+
+    const useGPU = this.inferenceDevice === "gpu";
+    const baseConfig: any = {
+      ttsEngine: "cosyvoice3",
+      useGPU,
+      seed: 42,
+      ...(refWavPath && hasCloningModels
+        ? {
+            cosyvoice3S3tokModelSrc: (qvacSdk as any).TTS_COSYVOICE3_S3TOK_COSYVOICE_FP16,
+            cosyvoice3CampplusModelSrc: (qvacSdk as any).TTS_COSYVOICE3_CAMPPLUS_COSYVOICE_FP32,
+            referenceAudioSrc: refWavPath,
+          }
+        : {}),
+      ...(lavaSr && lavasrSrc
+        ? { lavasrEnhancerModelSrc: lavasrSrc }
+        : {}),
+      ...(emotion ? { emotion } : {}),
+    };
+
+    const modelId = await (qvacSdk as any).loadModel({
+      modelSrc: cosyvoiceDescriptor,
+      modelType: "tts",
+      modelConfig: baseConfig,
+      onProgress: (p: any) => {
+        const pct = Math.round(p?.percentage ?? 0);
+        opts.onProgress?.({
+          taskId: opts.taskId,
+          progress: Math.min(40, Math.round(pct * 0.4)),
+          message: `Loading CosyVoice 3 weights ${pct}%...`,
+          phase: "loading",
+        });
+      },
+    });
+
+    if (this.loadedModels.size >= 4) {
+      const oldestKey = this.loadedModels.keys().next().value;
+      if (oldestKey) {
+        const oldId = this.loadedModels.get(oldestKey);
+        if (oldId) {
+          try {
+            await (qvacSdk as any).unloadModel?.({ modelId: oldId });
+          } catch {}
+        }
+        this.loadedModels.delete(oldestKey);
+      }
+    }
+
+    this.loadedModels.set(key, modelId);
+    return { modelId, engine: "cosyvoice3" };
   }
 
   public cancelSynthesis(taskId: string): void {
@@ -870,8 +848,8 @@ export class VoiceEngineService {
   }
 
   /**
-   * High-fidelity speech synthesis pipeline with dynamic engine selection (CosyVoice 3 / Chatterbox T3)
-   * and optional Lava-SR 48kHz neural enhancement.
+   * High-fidelity speech synthesis pipeline using CosyVoice 3
+   * and optional Lava-SR 48kHz enhancement.
    */
   public async synthesize(
     options: TtsGenerateOptions,
@@ -880,7 +858,7 @@ export class VoiceEngineService {
     isCancelled?: () => boolean,
   ): Promise<TtsGenerateResult> {
     const { taskId, rounds } = options;
-    const activeEngine: "cosyvoice3" | "chatterbox" = options.engine || "cosyvoice3";
+    const activeEngine = "cosyvoice3";
     const activeRounds = rounds.filter((r) => r.text.trim().length > 0);
     if (activeRounds.length === 0) {
       return { success: false, error: "No active speech rounds to synthesize" };
@@ -889,7 +867,7 @@ export class VoiceEngineService {
     const firstRound = activeRounds[0];
     const speakerName = options.speakerName || "Selected Speaker";
     onLog?.({
-      text: `[Echo Voice Engine] Synthesis task ${taskId} engine="${activeEngine}" voice="${speakerName}" turns=${activeRounds.length}...`,
+      text: `[Echo Voice Engine] Synthesis task ${taskId} engine="cosyvoice3" voice="${speakerName}" device="${this.inferenceDevice}" turns=${activeRounds.length}...`,
       stream: "system",
     });
 
@@ -898,7 +876,7 @@ export class VoiceEngineService {
       onProgress?.({
         taskId,
         progress: 8,
-        message: `Loading ${activeEngine === "chatterbox" ? "Chatterbox T3" : "CosyVoice 3"} Engine...`,
+        message: "Loading CosyVoice 3 Engine...",
         phase: "loading",
       });
 
@@ -952,10 +930,7 @@ export class VoiceEngineService {
         const round = activeRounds[i];
         let roundRefAudio = round.referenceAudioSrc || options.referenceAudioSrc;
         if (!roundRefAudio) {
-          const defaultVoice = path.resolve(process.cwd(), "public", "voices", "samples", "en", "voice_en_male_1.mp3");
-          if (fs.existsSync(defaultVoice)) {
-            roundRefAudio = defaultVoice;
-          }
+          roundRefAudio = "/voices/samples/en/voice_en_male_1.mp3";
         }
         const roundRawEmotion = round.emotion?.toLowerCase() || "";
         const roundEmotion = validEmotions.includes(roundRawEmotion) ? roundRawEmotion : detectedEmotion;
@@ -1012,8 +987,8 @@ export class VoiceEngineService {
           }
 
           if (seg.type === "speech" && seg.text) {
-            // Process cues & formatting (mapping to CosyVoice 3 native instruct tags or Chatterbox clean text)
-            const { cleanedText, detectedCues, tone: segTone } = processConversationalCues(seg.text, engine, seg.tone);
+            // Process cues & formatting for CosyVoice 3 native instruct tags
+            const { cleanedText, detectedCues, tone: segTone } = processConversationalCues(seg.text, seg.tone);
             if (!cleanedText) continue;
 
             // Split into natural sentence chunks (up to 36 words / ~15s)
@@ -1129,7 +1104,7 @@ export class VoiceEngineService {
 
               if (!done || !pcm || pcm.length === 0) {
                 throw new Error(
-                  `${engine === "chatterbox" ? "Chatterbox T3" : "CosyVoice 3"} returned no audio for turn ${i + 1}`,
+                  `CosyVoice 3 returned no audio for turn ${i + 1}`,
                 );
               }
 
@@ -1158,9 +1133,9 @@ export class VoiceEngineService {
         phase: "finalizing",
       });
 
-      // Save the final combined output for inspection
+      // Save the final combined output for inspection and media folder export
       if (allSamples.length > 0) {
-        savePcmAsWavFile(allSamples, sampleRate, "combined-output");
+        savePcmAsWavFile(allSamples, sampleRate, "combined-output", this.mediaDestinationFolder);
       }
 
       const audioUrl = pcmToWavDataUri(allSamples, sampleRate);
@@ -1198,7 +1173,7 @@ export class VoiceEngineService {
       onProgress?.({
         taskId,
         progress: 100,
-        message: `${engine === "chatterbox" ? "Chatterbox T3" : "CosyVoice 3"} synthesis complete`,
+        message: "CosyVoice 3 synthesis complete",
         phase: "complete",
       });
 

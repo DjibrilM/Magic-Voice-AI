@@ -31,7 +31,7 @@ export interface TtsGenerateOptions {
   lavaSrEnabled?: boolean
   speed?: number
   historyIndex?: number
-  engine?: 'cosyvoice3' | 'chatterbox'
+  engine?: 'cosyvoice3'
 }
 
 export interface TtsGenerationOutput {

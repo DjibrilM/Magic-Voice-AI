@@ -17,72 +17,16 @@ import {
 
 export const defaultModels: VoiceModelInfo[] = [
   {
-    id: 'chatterbox-t3-turbo-q8_0',
-    name: 'Chatterbox T3 Turbo Backbone (Q8_0 GGUF)',
-    descriptorName: 'TTS_T3_TURBO_EN_CHATTERBOX_Q8_0',
-    sizeBytes: 487091392,
-    sizeFormatted: '487 MB',
-    description:
-      'Fast and expressive autoregressive T3 speech backbone with high dynamic range and instant voice cloning.',
-    category: 'backbone',
-    engine: 'chatterbox',
-    required: false,
-    downloaded: false,
-    status: 'idle',
-  },
-  {
-    id: 'chatterbox-s3gen-q8_0',
-    name: 'Chatterbox S3Gen Acoustic Vocoder (Q8_0 GGUF)',
-    descriptorName: 'TTS_S3GEN_EN_CHATTERBOX_Q8_0',
-    sizeBytes: 829702464,
-    sizeFormatted: '830 MB',
-    description:
-      'Companion diffusion vocoder for realistic breath, timbre, and natural prosody in Chatterbox speech.',
-    category: 'vocoder',
-    engine: 'chatterbox',
-    required: false,
-    downloaded: false,
-    status: 'idle',
-  },
-  {
-    id: 'chatterbox-t3-multilingual-q8_0',
-    name: 'Chatterbox T3 Multilingual (23 Languages, Q8_0)',
-    descriptorName: 'TTS_T3_MULTILINGUAL_CHATTERBOX_Q8_0',
-    sizeBytes: 487091392,
-    sizeFormatted: '487 MB',
-    description:
-      'Multilingual T3 speech model supporting 23 international languages with cross-lingual voice cloning.',
-    category: 'backbone',
-    engine: 'chatterbox',
-    required: false,
-    downloaded: false,
-    status: 'idle',
-  },
-  {
-    id: 'chatterbox-s3gen-multilingual-q8_0',
-    name: 'Chatterbox S3Gen Multilingual Vocoder (Q8_0)',
-    descriptorName: 'TTS_S3GEN_MULTILINGUAL_CHATTERBOX_Q8_0',
-    sizeBytes: 829702464,
-    sizeFormatted: '830 MB',
-    description:
-      'Multilingual diffusion vocoder generating clean, natural acoustic waveforms across 23 languages.',
-    category: 'vocoder',
-    engine: 'chatterbox',
-    required: false,
-    downloaded: false,
-    status: 'idle',
-  },
-  {
     id: 'cosyvoice3-llm-q8_0',
-    name: 'CosyVoice 3 Neural Speech Backbone (0.5B, Q8_0)',
+    name: 'CosyVoice 3 Speech Backbone (0.5B, Q8_0)',
     descriptorName: 'TTS_COSYVOICE3_LLM_COSYVOICE_Q8_0',
     sizeBytes: 973496000,
     sizeFormatted: '973 MB',
     description:
-      'Zero-shot neural speech generator with instruct conditioning for voice design & cloning (optimized for Apple Silicon / M-series).',
+      'Zero-shot speech generator with instruct conditioning for voice design & cloning (optimized for Apple Silicon / M-series).',
     category: 'backbone',
     engine: 'cosyvoice3',
-    required: false,
+    required: true,
     downloaded: false,
     status: 'idle',
   },
@@ -96,21 +40,7 @@ export const defaultModels: VoiceModelInfo[] = [
       'Uncompressed FP16 flow-matching ODE acoustic generator for pristine vocal detail, breath dynamics, and zero metallic distortion.',
     category: 'vocoder',
     engine: 'cosyvoice3',
-    required: false,
-    downloaded: false,
-    status: 'idle',
-  },
-  {
-    id: 'lavasr-enhancer',
-    name: 'Lava-SR 48kHz Neural Enhancer (FP16)',
-    descriptorName: 'TTS_ENHANCER_LAVASR_FP16',
-    sizeBytes: 28051008,
-    sizeFormatted: '28 MB',
-    description:
-      'Deep spectral bandwidth upsampler and harmonic clarity enhancer for studio-grade 48kHz ultra-HD audio.',
-    category: 'enhancer',
-    engine: 'shared',
-    required: false,
+    required: true,
     downloaded: false,
     status: 'idle',
   },
@@ -121,10 +51,10 @@ export const defaultModels: VoiceModelInfo[] = [
     sizeBytes: 496605536,
     sizeFormatted: '496 MB',
     description:
-      'Neural speech tokenizer required for high-fidelity instant voice cloning in CosyVoice 3.',
-    category: 'vocoder',
+      'Speech tokenizer required for high-fidelity instant voice cloning in CosyVoice 3.',
+    category: 'speech-tokenizer',
     engine: 'cosyvoice3',
-    required: false,
+    required: true,
     downloaded: false,
     status: 'idle',
   },
@@ -136,9 +66,23 @@ export const defaultModels: VoiceModelInfo[] = [
     sizeFormatted: '27 MB',
     description:
       'Deep acoustic timbre and speaker embedding extractor for voice cloning in CosyVoice 3.',
-    category: 'multilingual',
+    category: 'speaker-encoder',
     engine: 'cosyvoice3',
-    required: false,
+    required: true,
+    downloaded: false,
+    status: 'idle',
+  },
+  {
+    id: 'lavasr-enhancer',
+    name: 'Lava-SR 48kHz Enhancer (FP16)',
+    descriptorName: 'TTS_ENHANCER_LAVASR_FP16',
+    sizeBytes: 28051008,
+    sizeFormatted: '28 MB',
+    description:
+      'Deep spectral bandwidth upsampler and harmonic clarity enhancer for studio-grade 48kHz ultra-HD audio.',
+    category: 'enhancer',
+    engine: 'shared',
+    required: true,
     downloaded: false,
     status: 'idle',
   },
@@ -163,32 +107,24 @@ export const modelsListAtom = atom<VoiceModelInfo[]>((get) => {
   return status?.models && status.models.length > 0 ? status.models : defaultModels
 })
 
-// Derived atom: true ONLY when all required models for the selected engine are ready
+// Derived atom: true ONLY when all 5 models are verified on disk and zero downloads are active
 export const allRequiredModelsReadyAtom = atom<boolean>((get) => {
+  const isChecking = get(isCheckingModelsAtom)
+  if (isChecking) return false
+
+  const downloading = get(downloadingModelsAtom)
+  if (Object.keys(downloading).length > 0) return false
+
   const models = get(modelsListAtom)
-  const currentEngine = get(selectedVoiceEngineAtom)
+  const activeModels = models.filter((m) => m.engine === 'cosyvoice3' || m.engine === 'shared')
+  if (activeModels.length === 0) return false
 
-  const requiredModels = models.filter((m) => {
-    if (currentEngine === 'cosyvoice3') {
-      return m.engine === 'cosyvoice3' || m.engine === 'shared' || m.required
-    }
-    if (currentEngine === 'chatterbox') {
-      const hasBackbone = models.some(m => m.engine === 'chatterbox' && m.category === 'backbone' && m.downloaded)
-      const hasVocoder = models.some(m => m.engine === 'chatterbox' && m.category === 'vocoder' && m.downloaded)
-      return hasBackbone && hasVocoder
-    }
-    return m.required
-  })
-
-  if (currentEngine === 'chatterbox') {
-    const hasBackbone = models.some(m => m.engine === 'chatterbox' && m.category === 'backbone' && m.downloaded)
-    const hasVocoder = models.some(m => m.engine === 'chatterbox' && m.category === 'vocoder' && m.downloaded)
-    return hasBackbone && hasVocoder
-  }
-
-  if (requiredModels.length === 0) return false
-  return requiredModels.every((m) => m.downloaded)
+  return activeModels.every((m) => m.downloaded && m.status !== 'downloading')
 })
+
+let lastCheckedEngine: VoiceEngineType | null = null
+let activeProgressListeners = 0
+let globalProgressUnsubscribe: (() => void) | null = null
 
 // ============================================================================
 // Hook: useModels
@@ -202,18 +138,14 @@ export function useModels() {
   const models = useAtomValue(modelsListAtom)
   const allRequiredReady = useAtomValue(allRequiredModelsReadyAtom)
 
-  // Active models scoped to the current engine
+  // Active models scoped to CosyVoice 3 and shared enhancers
   const activeEngineModels = models.filter(
-    (model) => model.engine === selectedEngine || model.engine === 'shared'
+    (model) => model.engine === 'cosyvoice3' || model.engine === 'shared'
   )
 
-  // Required models for this engine
+  // Required models for synthesis (all 5 active models)
   const requiredModels = activeEngineModels.filter(
-    (model) =>
-      model.required ||
-      (selectedEngine === 'cosyvoice3'
-        ? model.engine === 'cosyvoice3' || model.engine === 'shared'
-        : model.id === 'chatterbox-t3-turbo-q8_0' || model.id === 'chatterbox-s3gen-q8_0')
+    (model) => model.required || model.engine === 'cosyvoice3' || model.engine === 'shared'
   )
 
   const totalRequiredSizeBytes = requiredModels.reduce(
@@ -242,8 +174,12 @@ export function useModels() {
     setModelsStatus(fallbackStatus)
   }, [selectedEngine, setModelsStatus])
 
-  // Lifecycle status check on mount and whenever selectedEngine changes
+  // Lifecycle status check once per engine change across all mounted hook instances
   useEffect(() => {
+    if (lastCheckedEngine === selectedEngine && modelsStatus !== null) {
+      return
+    }
+    lastCheckedEngine = selectedEngine
     let mounted = true
 
     const initCheck = async () => {
@@ -259,32 +195,57 @@ export function useModels() {
     return () => {
       mounted = false
     }
-  }, [selectedEngine, refreshStatus, setIsChecking])
+  }, [selectedEngine, modelsStatus, refreshStatus, setIsChecking])
 
-  // Subscribe to live model download progress events
+  // Subscribe to live model download progress events (singleton subscription across hook instances)
   useEffect(() => {
-    const unsubscribe = onModelDownloadProgress((payload) => {
-      if (!payload || !payload.modelId) return
+    activeProgressListeners += 1
 
-      setDownloadingModels((prev) => {
-        if (payload.percentage >= 100) {
-          const next = { ...prev }
-          delete next[payload.modelId]
-          return next
+    if (!globalProgressUnsubscribe) {
+      globalProgressUnsubscribe = onModelDownloadProgress((payload) => {
+        if (!payload || !payload.modelId) return
+
+        if (payload.percentage >= 100 && payload.speed === 'Completed') {
+          // Refresh disk status FIRST before clearing downloadingModels[modelId]
+          // so allRequiredModelsReadyAtom never transitions prematurely.
+          refreshStatus().finally(() => {
+            setDownloadingModels((prev) => {
+              if (!prev[payload.modelId]) return prev
+              const next = { ...prev }
+              delete next[payload.modelId]
+              return next
+            })
+          })
+          return
         }
-        return {
-          ...prev,
-          [payload.modelId]: payload,
-        }
+
+        setDownloadingModels((prev) => {
+          const existing = prev[payload.modelId]
+          const monotonicPct = existing
+            ? Math.max(existing.percentage, payload.percentage)
+            : payload.percentage
+          const monotonicDownloaded = existing
+            ? Math.max(existing.downloaded, payload.downloaded)
+            : payload.downloaded
+
+          return {
+            ...prev,
+            [payload.modelId]: {
+              ...payload,
+              percentage: monotonicPct,
+              downloaded: monotonicDownloaded,
+            },
+          }
+        })
       })
-
-      if (payload.percentage >= 100) {
-        refreshStatus()
-      }
-    })
+    }
 
     return () => {
-      unsubscribe()
+      activeProgressListeners = Math.max(0, activeProgressListeners - 1)
+      if (activeProgressListeners === 0 && globalProgressUnsubscribe) {
+        globalProgressUnsubscribe()
+        globalProgressUnsubscribe = null
+      }
     }
   }, [refreshStatus, setDownloadingModels])
 
@@ -292,7 +253,7 @@ export function useModels() {
     async (modelId: string): Promise<boolean> => {
       setDownloadingModels((prev) => ({
         ...prev,
-        [modelId]: {
+        [modelId]: prev[modelId] || {
           modelId,
           percentage: 0,
           downloaded: 0,
@@ -309,13 +270,17 @@ export function useModels() {
           return true
         } else {
           console.error(`[modelsStore] Download failed for ${modelId}:`, res?.error)
+          if (res?.data) setModelsStatus(res.data as VoiceModelStatusResult)
+          else await refreshStatus()
           return false
         }
       } catch (err) {
         console.error(`[modelsStore] Download error for ${modelId}:`, err)
+        await refreshStatus()
         return false
       } finally {
         setDownloadingModels((prev) => {
+          if (!prev[modelId]) return prev
           const next = { ...prev }
           delete next[modelId]
           return next
@@ -327,14 +292,14 @@ export function useModels() {
 
   const downloadAllRequired = useCallback(async (): Promise<boolean> => {
     const needed = requiredModels.filter((m) => !m.downloaded)
-
-    for (const model of needed) {
-      const ok = await downloadModel(model.id)
-      if (!ok) return false
+    if (needed.length === 0) {
+      await refreshStatus()
+      return true
     }
 
+    const results = await Promise.all(needed.map((model) => downloadModel(model.id)))
     await refreshStatus()
-    return true
+    return results.every(Boolean)
   }, [requiredModels, downloadModel, refreshStatus])
 
   const cancelDownload = useCallback(

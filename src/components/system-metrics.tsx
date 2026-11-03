@@ -114,7 +114,7 @@ export function SystemMetrics() {
         type="button"
         onClick={() => setIsExpanded((prev) => !prev)}
         className={clsx(
-          "flex w-full h-[46px] items-center justify-between px-3.5 hover:bg-white/[0.04] transition-colors cursor-pointer text-left",
+          "flex w-full h-[45px] items-center justify-between px-3.5 hover:bg-white/[0.04] transition-colors cursor-pointer text-left",
           isExpanded && "border-b border-white/[0.06]"
         )}
         title={isExpanded ? "Collapse Resources" : "Expand Resources"}
@@ -267,7 +267,7 @@ export function SystemMetrics() {
                 </div>
 
                 <div className="flex items-center justify-between text-[11px] tabular-nums text-zinc-400">
-                  <span>Neural Engine</span>
+                  <span>Compute Engine</span>
                   <span>Metal</span>
                 </div>
               </div>

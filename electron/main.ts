@@ -1,5 +1,5 @@
 import "./init-env";
-import { app, BrowserWindow, protocol } from "electron";
+import { app, BrowserWindow, nativeImage, protocol, session, systemPreferences } from "electron";
 import { fileURLToPath } from "node:url";
 import { Readable } from "node:stream";
 import path from "node:path";
@@ -31,14 +31,35 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   ? path.join(process.env.APP_ROOT, "public")
   : RENDERER_DIST;
 
+app.setName("Magic-Voice AI");
+
+function resolveAppIconPath(): string {
+  const candidates = [
+    path.join(process.env.VITE_PUBLIC, process.platform === "win32" ? "favicon.ico" : "icon.png"),
+    path.join(process.env.VITE_PUBLIC, "icon-512.png"),
+    path.join(process.env.APP_ROOT, "build", "icon.png"),
+    path.join(process.env.APP_ROOT, "icon.png"),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return candidates[0];
+}
+
 // Bootstrap all modular core services & controllers with dependency injection
 export const core = bootstrapCore();
 
 let win: BrowserWindow | null = null;
 
 function createWindow() {
+  const iconPath = resolveAppIconPath();
   win = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
+    title: "Magic-Voice AI",
+    icon: iconPath,
+    minHeight: 900,
+    minWidth: 1500,
     trafficLightPosition: { x: 14, y: 12 },
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs"),
@@ -87,23 +108,95 @@ app.on("activate", () => {
 });
 
 app.whenReady().then(() => {
-  // Handle echo-media:// protocol for high-performance direct streaming of audio files from disk
+  if (process.platform === "darwin" && app.dock) {
+    const iconPath = resolveAppIconPath();
+    const dockIcon = nativeImage.createFromPath(iconPath);
+    if (!dockIcon.isEmpty()) {
+      app.dock.setIcon(dockIcon);
+    }
+  }
+
+  // Explicitly grant media (microphone/audio) permissions in Chromium session
+  session.defaultSession.setPermissionRequestHandler(async (_webContents, permission, callback) => {
+    if (permission === "media") {
+      if (process.platform === "darwin") {
+        try {
+          const status = systemPreferences.getMediaAccessStatus("microphone");
+          if (status === "not-determined") {
+            const granted = await systemPreferences.askForMediaAccess("microphone");
+            return callback(granted);
+          }
+          return callback(status === "granted");
+        } catch (err) {
+          console.warn("[Media Permission] Error checking macOS system preferences:", err);
+          return callback(true);
+        }
+      }
+      return callback(true);
+    }
+    callback(false);
+  });
+
+  session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
+    if (permission === "media") {
+      return true;
+    }
+    return false;
+  });
+
+  // Redirect any root-relative file:///voices/* requests in packaged file:// windows
+  // to the custom echo-media:// protocol so preset/custom voice assets always resolve.
+  session.defaultSession.webRequest.onBeforeRequest(
+    { urls: ["file:///voices/*"] },
+    (details, callback) => {
+      try {
+        const parsed = new URL(details.url);
+        const relVoicesPath = decodeURIComponent(parsed.pathname);
+        const resolved = core.voiceService.resolveVoiceAssetDiskPath(relVoicesPath);
+        if (resolved) {
+          return callback({ redirectURL: core.voiceService.toEchoMediaUrl(resolved) });
+        }
+      } catch {
+        // ignore
+      }
+      callback({});
+    }
+  );
+
+  // Handle echo-media:// protocol for high-performance direct streaming of audio & voice assets from disk
   protocol.handle("echo-media", async (request) => {
     try {
-      const raw = request.url.replace(/^echo-media:\/\//, "");
+      const raw = request.url.replace(/^echo-media:\/\//, "").split("?")[0];
       let filePath = decodeURIComponent(raw.startsWith("/") ? raw : "/" + raw);
-      if (process.platform === "win32" && filePath.startsWith("/")) {
+      if (process.platform === "win32" && /^\/[a-zA-Z]:/.test(filePath)) {
         filePath = filePath.slice(1);
+      }
+      if (!fs.existsSync(filePath)) {
+        const resolvedVoiceAsset = core.voiceService.resolveVoiceAssetDiskPath(filePath);
+        if (resolvedVoiceAsset) {
+          filePath = resolvedVoiceAsset;
+        }
       }
       if (!fs.existsSync(filePath)) {
         return new Response("Media not found", { status: 404 });
       }
       const total = fs.statSync(filePath).size;
-      const contentType = filePath.endsWith(".mp3")
-        ? "audio/mpeg"
-        : filePath.endsWith(".wav")
-          ? "audio/wav"
-          : "application/octet-stream";
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeMap: Record<string, string> = {
+        ".mp3": "audio/mpeg",
+        ".wav": "audio/wav",
+        ".m4a": "audio/mp4",
+        ".aac": "audio/aac",
+        ".ogg": "audio/ogg",
+        ".flac": "audio/flac",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+        ".svg": "image/svg+xml",
+        ".json": "application/json",
+      };
+      const contentType = mimeMap[ext] || "application/octet-stream";
       const headers = new Headers({
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",

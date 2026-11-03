@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { ChevronRight, Check, Play } from 'lucide-react'
 import {
   DropdownMenu,
@@ -12,8 +11,8 @@ import { cn } from '@/lib/utils'
 import { Voice, LanguageOption, LANGUAGES, useDynamicLanguages } from '../types'
 
 export interface SettingsDrawerProps {
-  engine?: 'cosyvoice3' | 'chatterbox'
-  onEngineChange?: (engine: 'cosyvoice3' | 'chatterbox') => void
+  engine?: 'cosyvoice3'
+  onEngineChange?: (engine: 'cosyvoice3') => void
   onSwitchToCosyVoice?: () => void
   activeVoice: Voice
   voices: Voice[]
@@ -40,8 +39,8 @@ export interface SettingsDrawerProps {
 }
 
 export function SettingsDrawer({
-  engine = 'cosyvoice3',
-  onEngineChange,
+  engine: _engine = 'cosyvoice3',
+  onEngineChange: _onEngineChange,
   onSwitchToCosyVoice: _onSwitchToCosyVoice,
   activeVoice,
   voices: _voices,
@@ -82,55 +81,8 @@ export function SettingsDrawer({
 
   return (
     <div className="w-full shrink-0 h-full overflow-y-auto px-4 py-3 space-y-5 pb-28 sidebar-scrollbar">
-      {/* VOICE ENGINE SELECTOR */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-zinc-300">
-          Voice Engine
-        </label>
-        <div className="relative flex p-0.5 bg-[#141417] border border-[#27272a] rounded-lg">
-          <button
-            type="button"
-            onClick={() => onEngineChange?.('cosyvoice3')}
-            className={cn(
-              'relative flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors cursor-pointer text-center select-none',
-              engine === 'cosyvoice3'
-                ? 'text-white'
-                : 'text-zinc-400 hover:text-zinc-200'
-            )}
-          >
-            {engine === 'cosyvoice3' && (
-              <motion.div
-                layoutId="engineTabActive"
-                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                className="absolute inset-0 bg-[#242429] rounded-md shadow-xs border border-white/5"
-              />
-            )}
-            <span className="relative z-10">CosyVoice 3</span>
-          </button>
 
-          <button
-            type="button"
-            onClick={() => onEngineChange?.('chatterbox')}
-            className={cn(
-              'relative flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors cursor-pointer text-center select-none',
-              engine === 'chatterbox'
-                ? 'text-white'
-                : 'text-zinc-400 hover:text-zinc-200'
-            )}
-          >
-            {engine === 'chatterbox' && (
-              <motion.div
-                layoutId="engineTabActive"
-                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                className="absolute inset-0 bg-[#242429] rounded-md shadow-xs border border-white/5"
-              />
-            )}
-            <span className="relative z-10">Chatterbox T3</span>
-          </button>
-        </div>
-      </div>
-
-      {/* VOICE SELECTION (Both CosyVoice 3 and Chatterbox support voice cloning) */}
+      {/* VOICE SELECTION */}
       <ExpandableContainer isExpanded={true}>
         <div className="space-y-2.5 pb-2">
           <div className="flex items-center justify-between">
@@ -229,7 +181,7 @@ export function SettingsDrawer({
       </ExpandableContainer>
 
       {/* VOICE PROMPT & PERFORMANCE DIRECTION (CosyVoice 3 Instruct Only) */}
-      <ExpandableContainer isExpanded={engine === 'cosyvoice3'}>
+      <ExpandableContainer isExpanded={true}>
         <div className="space-y-2.5 rounded-xl border border-[#27272a] bg-[#161619] p-3 shadow-xs">
           <div className="flex items-center justify-between">
             <label className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
@@ -312,8 +264,8 @@ export function SettingsDrawer({
           </div>
         </div>
 
-        {/* Similarity / Reference Top-P Slider (CosyVoice 3 only) */}
-        <ExpandableContainer isExpanded={engine === 'cosyvoice3'}>
+        {/* Similarity / Reference Top-P Slider */}
+        <ExpandableContainer isExpanded={true}>
           <div className="space-y-2 pb-1">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-zinc-300">Cloning Fidelity (Top-P)</span>
@@ -353,8 +305,8 @@ export function SettingsDrawer({
           </div>
         </div>
 
-        {/* Studio Voice Clarity Enhancer (CosyVoice 3 only) */}
-        <ExpandableContainer isExpanded={engine === 'cosyvoice3'}>
+        {/* Studio Voice Clarity Enhancer */}
+        <ExpandableContainer isExpanded={true}>
           <div className="flex items-center justify-between py-1">
             <div>
               <div className="text-xs text-zinc-300">Voice Clarity</div>

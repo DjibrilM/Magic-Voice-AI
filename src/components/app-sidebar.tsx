@@ -20,21 +20,17 @@ export function AppSidebar({ isOpen = true }: { isOpen?: boolean }) {
 
   return (
     <aside
-      className={`flex h-full shrink-0 flex-col justify-between border-r border-[#262629] bg-[#161616] select-none transition-all duration-300 ease-in-out ${
-        isOpen
-          ? "w-[240px] opacity-100"
-          : "w-0 opacity-0 -translate-x-full border-r-0 pointer-events-none overflow-hidden"
-      }`}
+      className={`flex h-full shrink-0 flex-col justify-between border-r border-[#262629] bg-[#161616] select-none transition-all duration-300 ease-in-out ${isOpen
+        ? "w-[240px] opacity-100"
+        : "w-0 opacity-0 -translate-x-full border-r-0 pointer-events-none overflow-hidden"
+        }`}
     >
       {/* Top Section: Logo with bottom border aligned at header level */}
       <div className="flex h-10 shrink-0 items-center border-b border-[#262629] px-3">
         <Link
           to="/"
-          className="flex items-center gap-2.5 px-2.5 text-white hover:opacity-90 transition-opacity"
+          className="flex items-center gap-2.5 px-2 text-white hover:opacity-90 transition-opacity"
         >
-          <div className="flex size-6 items-center justify-center rounded-md bg-white/10 text-white">
-            <TextToSpeechIcon className="size-4 shrink-0 text-white" />
-          </div>
           <span className="text-[14px] font-semibold tracking-tight text-white">Magic-Voice AI</span>
         </Link>
       </div>
@@ -49,11 +45,10 @@ export function AppSidebar({ isOpen = true }: { isOpen?: boolean }) {
               <Link
                 key={item.name}
                 to={item.path}
-                className={`flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13.5px] font-medium transition-colors ${
-                  active
-                    ? "bg-[#232323] text-white"
-                    : "text-[#a1a1aa] hover:bg-white/4 hover:text-[#f4f4f5]"
-                }`}
+                className={`flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13.5px] font-medium transition-colors ${active
+                  ? "bg-[#232323] text-white"
+                  : "text-[#a1a1aa] hover:bg-white/4 hover:text-[#f4f4f5]"
+                  }`}
               >
                 <Icon className="size-4.5 shrink-0 text-current" />
                 <span className="truncate">{item.name}</span>

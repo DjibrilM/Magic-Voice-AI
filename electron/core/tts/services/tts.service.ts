@@ -61,7 +61,21 @@ export class TtsService {
     return { success: false, error: 'Conversation repository unavailable' }
   }
 
-  /** Access the underlying voice engine neural service */
+  /** Configure destination folder for generated voice media */
+  public setMediaDestinationFolder(folderPath: string): void {
+    this.voiceEngine.setMediaDestinationFolder(folderPath)
+  }
+
+  /** Configure compute device (GPU vs CPU) for TTS inference */
+  public setInferenceDevice(device: 'gpu' | 'cpu'): void {
+    this.voiceEngine.setInferenceDevice(device)
+  }
+
+  public getInferenceDevice(): 'gpu' | 'cpu' {
+    return this.voiceEngine.getInferenceDevice()
+  }
+
+  /** Access the underlying voice engine service */
   public getVoiceEngine(): VoiceEngineService {
     return this.voiceEngine
   }
@@ -72,7 +86,7 @@ export class TtsService {
   }
 
   /** Get voice engine models download status */
-  public getModelStatus(selectedEngine?: 'cosyvoice3' | 'chatterbox'): VoiceModelStatusResult {
+  public getModelStatus(selectedEngine?: 'cosyvoice3'): VoiceModelStatusResult {
     return this.modelsService.getStatus(selectedEngine)
   }
 

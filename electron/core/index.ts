@@ -45,6 +45,19 @@ export function bootstrapCore(): CoreContext {
   // 4. Instantiate remaining domain services with injected repositories
   const voiceService = new VoiceService(voiceRepository)
   const ttsService = new TtsService(modelsService, conversationRepository)
+  const mediaFolder = systemService.getMediaFolder().path
+  if (mediaFolder) {
+    ttsService.setMediaDestinationFolder(mediaFolder)
+  }
+  systemService.onMediaFolderChanged((newPath) => {
+    ttsService.setMediaDestinationFolder(newPath)
+  })
+
+  // Configure inference compute device (GPU vs CPU) for voice engine
+  ttsService.setInferenceDevice(systemService.getInferenceDevice())
+  systemService.onInferenceDeviceChanged((newDevice) => {
+    ttsService.setInferenceDevice(newDevice)
+  })
 
   // 5. Initialize domain controllers with injected services (Constructor Injection)
   const controllers: BaseController[] = [

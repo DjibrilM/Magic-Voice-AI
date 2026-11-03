@@ -1,25 +1,18 @@
-import { ChatterboxModel } from '../interfaces/model'
+import { VoiceModelOption } from '../interfaces/model'
 
-export const CHATTERBOX_MODELS: ChatterboxModel[] = [
+export const COSYVOICE_MODELS: VoiceModelOption[] = [
   {
-    id: 'cb-t3-turbo',
-    name: 'Chatterbox T3 Turbo (GGUF)',
-    badge: 'V4 Q8',
-    description: 'Ultra-low latency zero-shot neural synthesis, optimized for WSOLA motion and fast turnaround.',
+    id: 'cosyvoice3-llm-q8_0',
+    name: 'CosyVoice 3 LLM (Q8_0 GGUF)',
+    badge: 'Q8_0',
+    description: '0.5B generative backbone producing expressive prosody, emotion conditioning, and natural pitch flow.',
     recommended: true,
   },
   {
-    id: 'cb-expressive-v12',
-    name: 'Chatterbox Expressive v1.2',
-    badge: 'FP16',
-    description: 'Highest dynamic prosody range for dramatic scripts, multi-turn character dialogues, and acting.',
-    recommended: false,
-  },
-  {
-    id: 'cb-mtl-05b',
-    name: 'Chatterbox MTL 0.5B Multilingual',
-    badge: 'MTL',
-    description: 'Cross-lingual zero-shot voice transfer supporting 23 international languages.',
-    recommended: false,
+    id: 'cosyvoice3-flow-fp32',
+    name: 'CosyVoice 3 Flow Matching Vocoder',
+    badge: 'FP32',
+    description: 'Full-precision continuous flow-matching acoustic vocoder for pristine, broadcast-grade speech synthesis.',
+    recommended: true,
   },
 ]
