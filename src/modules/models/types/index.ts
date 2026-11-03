@@ -1,17 +1,13 @@
-export type VoiceEngineType = 'cosyvoice3' | 'chatterbox'
-export type MusicEngineType = 'acestep' | 'minimax'
-export type StoryEngineType = 'story'
-export type AnyEngineType = VoiceEngineType | MusicEngineType | StoryEngineType
+export type VoiceEngineType = 'cosyvoice3'
+export type AnyEngineType = VoiceEngineType
 
 export type ModelCategory =
   | 'backbone'
   | 'vocoder'
   | 'enhancer'
   | 'multilingual'
-  | 'text-encoder'
-  | 'lm'
-  | 'dit'
-  | 'vae'
+  | 'speaker-encoder'
+  | 'speech-tokenizer'
 
 export type ModelStatus = 'idle' | 'downloading' | 'ready' | 'error'
 

@@ -48,5 +48,30 @@ export class SystemController extends BaseController {
     ipcMain.handle(IPC_CHANNELS.SYSTEM_SET_MEDIA_FOLDER, async (_event, payload: { path: string }) => {
       return this.systemService.setMediaFolder(payload.path)
     })
+
+    // 7. Get inference device (gpu vs cpu)
+    ipcMain.handle(IPC_CHANNELS.SYSTEM_GET_INFERENCE_DEVICE, async () => {
+      return { success: true, device: this.systemService.getInferenceDevice() }
+    })
+
+    // 8. Set inference device (gpu vs cpu)
+    ipcMain.handle(IPC_CHANNELS.SYSTEM_SET_INFERENCE_DEVICE, async (_event, payload: { device: 'gpu' | 'cpu' }) => {
+      return this.systemService.setInferenceDevice(payload.device)
+    })
+
+    // 9. Query microphone media access permission status
+    ipcMain.handle(IPC_CHANNELS.SYSTEM_GET_MICROPHONE_PERMISSION, async () => {
+      return this.systemService.getMicrophonePermission()
+    })
+
+    // 10. Proactively request microphone permission from host OS
+    ipcMain.handle(IPC_CHANNELS.SYSTEM_REQUEST_MICROPHONE_PERMISSION, async () => {
+      return this.systemService.requestMicrophonePermission()
+    })
+
+    // 11. Open OS system settings for microphone privacy
+    ipcMain.handle(IPC_CHANNELS.SYSTEM_OPEN_MICROPHONE_SETTINGS, async () => {
+      return this.systemService.openMicrophoneSettings()
+    })
   }
 }

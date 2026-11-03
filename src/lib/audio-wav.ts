@@ -67,7 +67,7 @@ export function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
  * createSyntheticWavUrlSync(), which used Web Audio API oscillators
  * (sawtooth/triangle waves) to produce buzzy tone noise — not real speech.
  *
- * The only supported audio generation path is the QVAC / CosyVoice 3 neural
+ * The only supported audio generation path is the QVAC / CosyVoice 3 speech
  * TTS pipeline running in the Electron main process
  * (electron/core/tts/services/voice-engine.service.ts). It produces
  * 24 kHz native or 48 kHz (LavaSR-enhanced) studio-grade audio and requires

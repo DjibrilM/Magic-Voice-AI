@@ -68,5 +68,5 @@
   "prisma": {
     "schema": "prisma/schema"
   },
-  "description": "Magic-Voice AI - Local Neural Speech Synthesis & Voice Cloning"
+  "description": "Magic-Voice AI - Local Speech Synthesis & Voice Cloning"
 }

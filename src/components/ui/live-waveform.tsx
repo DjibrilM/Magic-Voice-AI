@@ -3,6 +3,7 @@ import { useEffect, useRef, type HTMLAttributes } from "react"
 import { cn } from "@/lib/utils"
 
 export type LiveWaveformProps = HTMLAttributes<HTMLDivElement> & {
+  stream?: MediaStream | null
   active?: boolean
   processing?: boolean
   data?: number[]
@@ -27,6 +28,7 @@ export type LiveWaveformProps = HTMLAttributes<HTMLDivElement> & {
 }
 
 export const LiveWaveform = ({
+  stream: incomingStream,
   active = false,
   processing = false,
   data,
@@ -57,6 +59,7 @@ export const LiveWaveform = ({
   const analyserRef = useRef<AnalyserNode | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const isOwnStreamRef = useRef(false)
   const animationRef = useRef<number>(0)
   const lastUpdateRef = useRef<number>(0)
   const processingAnimationRef = useRef<number | null>(null)
@@ -246,11 +249,13 @@ export const LiveWaveform = ({
 
     const cleanupMicrophone = () => {
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => {
-          try {
-            track.stop()
-          } catch {}
-        })
+        if (isOwnStreamRef.current) {
+          streamRef.current.getTracks().forEach((track) => {
+            try {
+              track.stop()
+            } catch {}
+          })
+        }
         streamRef.current = null
         onStreamEndRef.current?.()
       }
@@ -276,32 +281,41 @@ export const LiveWaveform = ({
 
     const setupMicrophone = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: deviceId
-            ? {
-                deviceId: { exact: deviceId },
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true,
-              }
-            : {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true,
-              },
-        })
+        let stream = incomingStream
+        let isOwnStream = false
+
+        if (!stream) {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: deviceId
+              ? {
+                  deviceId: { exact: deviceId },
+                  echoCancellation: true,
+                  noiseSuppression: true,
+                  autoGainControl: true,
+                }
+              : {
+                  echoCancellation: true,
+                  noiseSuppression: true,
+                  autoGainControl: true,
+                },
+          })
+          isOwnStream = true
+        }
 
         // If recording stopped or component unmounted while waiting for userMedia
         if (isCancelled || !active) {
-          stream.getTracks().forEach((track) => {
-            try {
-              track.stop()
-            } catch {}
-          })
+          if (isOwnStream) {
+            stream.getTracks().forEach((track) => {
+              try {
+                track.stop()
+              } catch {}
+            })
+          }
           return
         }
 
         streamRef.current = stream
+        isOwnStreamRef.current = isOwnStream
         onStreamReadyRef.current?.(stream)
 
         const AudioContextConstructor =
@@ -317,11 +331,13 @@ export const LiveWaveform = ({
         source.connect(analyser)
 
         if (isCancelled || !active) {
-          stream.getTracks().forEach((track) => {
-            try {
-              track.stop()
-            } catch {}
-          })
+          if (isOwnStream) {
+            stream.getTracks().forEach((track) => {
+              try {
+                track.stop()
+              } catch {}
+            })
+          }
           try {
             audioContext.close()
           } catch {}
@@ -346,7 +362,7 @@ export const LiveWaveform = ({
       isCancelled = true
       cleanupMicrophone()
     }
-  }, [active, deviceId, fftSize, smoothingTimeConstant])
+  }, [active, deviceId, fftSize, smoothingTimeConstant, incomingStream])
 
   // Animation loop
   useEffect(() => {

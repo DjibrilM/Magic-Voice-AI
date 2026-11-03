@@ -1,5 +1,5 @@
 import "./init-env";
-import { app, BrowserWindow, protocol } from "electron";
+import { app, BrowserWindow, protocol, session, systemPreferences } from "electron";
 import { fileURLToPath } from "node:url";
 import { Readable } from "node:stream";
 import path from "node:path";
@@ -38,7 +38,10 @@ let win: BrowserWindow | null = null;
 
 function createWindow() {
   win = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
+    icon: path.join(
+      process.env.VITE_PUBLIC,
+      process.platform === "win32" ? "favicon.ico" : "icon-512.png"
+    ),
     trafficLightPosition: { x: 14, y: 12 },
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs"),
@@ -87,6 +90,34 @@ app.on("activate", () => {
 });
 
 app.whenReady().then(() => {
+  // Explicitly grant media (microphone/audio) permissions in Chromium session
+  session.defaultSession.setPermissionRequestHandler(async (_webContents, permission, callback) => {
+    if (permission === "media") {
+      if (process.platform === "darwin") {
+        try {
+          const status = systemPreferences.getMediaAccessStatus("microphone");
+          if (status === "not-determined") {
+            const granted = await systemPreferences.askForMediaAccess("microphone");
+            return callback(granted);
+          }
+          return callback(status === "granted");
+        } catch (err) {
+          console.warn("[Media Permission] Error checking macOS system preferences:", err);
+          return callback(true);
+        }
+      }
+      return callback(true);
+    }
+    callback(false);
+  });
+
+  session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
+    if (permission === "media") {
+      return true;
+    }
+    return false;
+  });
+
   // Handle echo-media:// protocol for high-performance direct streaming of audio files from disk
   protocol.handle("echo-media", async (request) => {
     try {

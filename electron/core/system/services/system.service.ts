@@ -1,8 +1,8 @@
 import os from 'node:os'
 import fs from 'node:fs'
 import path from 'node:path'
-import { app, shell, dialog } from 'electron'
-import type { SystemMetrics, OpenExportsResult, StorageInfoResult, MediaFolderResult } from '../interfaces'
+import { app, shell, dialog, systemPreferences } from 'electron'
+import type { SystemMetrics, OpenExportsResult, StorageInfoResult, MediaFolderResult, MicrophonePermissionResult } from '../interfaces'
 import type { ModelsService } from '../../models/services/models.service'
 
 function getDirectorySizeBytes(dirPath: string): number {
@@ -36,7 +36,10 @@ export class SystemService {
   private prevCpuTimes: { idle: number; total: number } | null = null
   private modelsService: ModelsService | null = null
   private mediaDestinationFolder: string
+  private inferenceDevice: 'gpu' | 'cpu' = 'gpu'
   private configPath: string
+  private mediaFolderChangeListeners: ((newPath: string) => void)[] = []
+  private inferenceDeviceChangeListeners: ((newDevice: 'gpu' | 'cpu') => void)[] = []
 
   constructor(modelsService?: ModelsService) {
     if (modelsService) {
@@ -54,16 +57,85 @@ export class SystemService {
     this.mediaDestinationFolder = defaultExports
     this.loadConfig()
 
-    // Ensure the folder exists
+    // Ensure the folder exists and sync any existing audio output
     try {
       if (!fs.existsSync(this.mediaDestinationFolder)) {
         fs.mkdirSync(this.mediaDestinationFolder, { recursive: true })
       }
+      this.syncExistingMediaFiles()
     } catch {}
+  }
+
+  public onMediaFolderChanged(listener: (newPath: string) => void): void {
+    this.mediaFolderChangeListeners.push(listener)
+  }
+
+  /**
+   * Syncs existing generated audio files from assets/testing-voice-output
+   * into mediaDestinationFolder so that opening Finder shows all synthesized media.
+   */
+  public syncExistingMediaFiles(): void {
+    try {
+      if (!fs.existsSync(this.mediaDestinationFolder)) {
+        fs.mkdirSync(this.mediaDestinationFolder, { recursive: true })
+      }
+      const localAudioDir = path.resolve(process.cwd(), 'assets/testing-voice-output')
+      if (fs.existsSync(localAudioDir) && fs.existsSync(this.mediaDestinationFolder)) {
+        const files = fs.readdirSync(localAudioDir)
+        for (const file of files) {
+          if (file.endsWith('.wav') || file.endsWith('.mp3')) {
+            const srcPath = path.join(localAudioDir, file)
+            const destPath = path.join(this.mediaDestinationFolder, file)
+            if (!fs.existsSync(destPath)) {
+              try {
+                fs.copyFileSync(srcPath, destPath)
+              } catch {}
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[SystemService] Media file sync warning:', err)
+    }
+  }
+
+  public getMediaFilesCount(): number {
+    try {
+      let count = 0
+      if (fs.existsSync(this.mediaDestinationFolder)) {
+        count += fs.readdirSync(this.mediaDestinationFolder).filter((f) => f.endsWith('.wav') || f.endsWith('.mp3')).length
+      }
+      return count
+    } catch {
+      return 0
+    }
   }
 
   public setModelsService(service: ModelsService): void {
     this.modelsService = service
+  }
+
+  public onInferenceDeviceChanged(listener: (newDevice: 'gpu' | 'cpu') => void): void {
+    this.inferenceDeviceChangeListeners.push(listener)
+  }
+
+  public getInferenceDevice(): 'gpu' | 'cpu' {
+    return this.inferenceDevice
+  }
+
+  public setInferenceDevice(device: 'gpu' | 'cpu'): { success: boolean; device: 'gpu' | 'cpu'; error?: string } {
+    try {
+      this.inferenceDevice = device === 'cpu' ? 'cpu' : 'gpu'
+      this.saveConfig()
+      for (const listener of this.inferenceDeviceChangeListeners) {
+        try {
+          listener(this.inferenceDevice)
+        } catch {}
+      }
+      return { success: true, device: this.inferenceDevice }
+    } catch (err: any) {
+      return { success: false, device: this.inferenceDevice, error: err?.message || String(err) }
+    }
   }
 
   private loadConfig(): void {
@@ -73,6 +145,9 @@ export class SystemService {
         const data = JSON.parse(raw)
         if (data.mediaDestinationFolder && typeof data.mediaDestinationFolder === 'string') {
           this.mediaDestinationFolder = data.mediaDestinationFolder
+        }
+        if (data.inferenceDevice === 'cpu' || data.inferenceDevice === 'gpu') {
+          this.inferenceDevice = data.inferenceDevice
         }
       }
     } catch {}
@@ -86,7 +161,14 @@ export class SystemService {
       }
       fs.writeFileSync(
         this.configPath,
-        JSON.stringify({ mediaDestinationFolder: this.mediaDestinationFolder }, null, 2),
+        JSON.stringify(
+          {
+            mediaDestinationFolder: this.mediaDestinationFolder,
+            inferenceDevice: this.inferenceDevice,
+          },
+          null,
+          2
+        ),
         'utf-8'
       )
     } catch (err) {
@@ -189,6 +271,12 @@ export class SystemService {
       }
       this.mediaDestinationFolder = targetPath
       this.saveConfig()
+      this.syncExistingMediaFiles()
+      for (const listener of this.mediaFolderChangeListeners) {
+        try {
+          listener(this.mediaDestinationFolder)
+        } catch {}
+      }
       return { success: true, path: this.mediaDestinationFolder }
     } catch (err: any) {
       return { success: false, error: err?.message || String(err) }
@@ -222,6 +310,7 @@ export class SystemService {
    */
   public async openExportsFolder(): Promise<OpenExportsResult> {
     try {
+      this.syncExistingMediaFiles()
       if (!fs.existsSync(this.mediaDestinationFolder)) {
         fs.mkdirSync(this.mediaDestinationFolder, { recursive: true })
       }
@@ -238,6 +327,8 @@ export class SystemService {
    */
   public async getStorageInfo(): Promise<StorageInfoResult> {
     try {
+      this.syncExistingMediaFiles()
+
       // 1. Calculate models storage
       let modelsBytes = 0
       const modelsList: any[] = []
@@ -269,8 +360,9 @@ export class SystemService {
       const localAudioDir = path.resolve(process.cwd(), 'assets/testing-voice-output')
       const localAudioBytes = getDirectorySizeBytes(localAudioDir)
 
-      const totalMediaBytes = mediaBytes + localAudioBytes
+      const totalMediaBytes = Math.max(mediaBytes, localAudioBytes)
       const totalBytes = modelsBytes + totalMediaBytes
+      const mediaFilesCount = this.getMediaFilesCount()
 
       return {
         success: true,
@@ -281,6 +373,8 @@ export class SystemService {
         totalStorageBytes: totalBytes,
         totalStorageFormatted: formatBytes(totalBytes),
         mediaDestinationFolder: this.mediaDestinationFolder,
+        mediaFilesCount,
+        inferenceDevice: this.inferenceDevice,
         models: modelsList,
       }
     } catch (err: any) {
@@ -297,5 +391,85 @@ export class SystemService {
         error: err?.message || String(err),
       }
     }
+  }
+
+  /**
+   * Get current microphone media access status on the host OS
+   */
+  public getMicrophonePermission(): MicrophonePermissionResult {
+    if (process.platform === 'darwin') {
+      try {
+        const status = systemPreferences.getMediaAccessStatus('microphone')
+        return {
+          success: true,
+          granted: status === 'granted',
+          status: status as any,
+        }
+      } catch (err: any) {
+        return {
+          success: false,
+          granted: false,
+          status: 'unknown',
+          error: err?.message || String(err),
+        }
+      }
+    }
+    return {
+      success: true,
+      granted: true,
+      status: 'granted',
+    }
+  }
+
+  /**
+   * Proactively request microphone permission from the host OS (macOS system prompt)
+   */
+  public async requestMicrophonePermission(): Promise<MicrophonePermissionResult> {
+    if (process.platform === 'darwin') {
+      try {
+        const initialStatus = systemPreferences.getMediaAccessStatus('microphone')
+        if (initialStatus === 'granted') {
+          return {
+            success: true,
+            granted: true,
+            status: 'granted',
+          }
+        }
+        const granted = await systemPreferences.askForMediaAccess('microphone')
+        const finalStatus = systemPreferences.getMediaAccessStatus('microphone')
+        return {
+          success: true,
+          granted: finalStatus === 'granted' || granted,
+          status: finalStatus as any,
+        }
+      } catch (err: any) {
+        return {
+          success: false,
+          granted: false,
+          status: 'unknown',
+          error: err?.message || String(err),
+        }
+      }
+    }
+    return {
+      success: true,
+      granted: true,
+      status: 'granted',
+    }
+  }
+
+  /**
+   * Open macOS System Settings directly to Privacy & Security -> Microphone
+   */
+  public async openMicrophoneSettings(): Promise<{ success: boolean; error?: string }> {
+    if (process.platform === 'darwin') {
+      try {
+        await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone')
+        return { success: true }
+      } catch (err: any) {
+        return { success: false, error: err?.message || String(err) }
+      }
+    }
+    return { success: true }
   }
 }

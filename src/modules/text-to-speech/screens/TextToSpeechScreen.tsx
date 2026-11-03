@@ -4,7 +4,7 @@ import { motion, AnimatePresence, LayoutGroup, Reorder } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { TrackWavePlayer } from '@/components/player/TrackWavePlayer'
 import { ShimmeringText } from '@/components/ui/shimmering-text'
-import { deleteAllModels, useModels } from '@/modules/models'
+import { useModels } from '@/modules/models'
 import { usePlayer } from '@/hooks/usePlayer'
 import { useAudioEffect } from '@/hooks/useAudioEffect'
 import { cn } from '@/lib/utils'
@@ -389,10 +389,10 @@ export function TextToSpeechScreen() {
     // Immediately stop voice audition previews and clear previous playback
     voicePreview.stopPreview()
     player.pause()
-    const currentEngine = state.engine || selectedEngine || 'cosyvoice3'
+    const currentEngine = 'cosyvoice3'
     updateState({
       isSynthesizing: true,
-      synthesisProgress: `Connecting to ${currentEngine === 'chatterbox' ? 'Chatterbox T3' : 'CosyVoice 3'} voice engine...`,
+      synthesisProgress: 'Connecting to CosyVoice 3 voice engine...',
     })
 
     // Filter active speech rounds that have text to synthesize
@@ -479,8 +479,8 @@ export function TextToSpeechScreen() {
           dateGroup: 'Today',
           timeAgo: 'Just now',
           timestamp: now,
-          model: currentEngine === 'chatterbox' ? 'Chatterbox T3' : 'CosyVoice 3',
-          engine: currentEngine,
+          model: 'CosyVoice 3',
+          engine: 'cosyvoice3',
           duration: formatTime(newGen.duration),
           durationSec: newGen.duration,
           emotion: newGen.emotion,
@@ -539,10 +539,7 @@ export function TextToSpeechScreen() {
       voicePreview.stopPreview()
       player.pause()
 
-      const targetEngine =
-        item.engine ||
-        (item.model?.toLowerCase().includes('chatterbox') ? 'chatterbox' : 'cosyvoice3')
-      setSelectedEngine(targetEngine)
+      setSelectedEngine('cosyvoice3')
 
       let restoredRounds: SpeechRound[] = []
       if (item.roundsData && Array.isArray(item.roundsData) && item.roundsData.length > 0) {
@@ -594,7 +591,7 @@ export function TextToSpeechScreen() {
       updateState({
         rounds: restoredRounds,
         focusedRoundIndex: 0,
-        engine: targetEngine,
+        engine: 'cosyvoice3',
         ...(item.voicePrompt !== undefined ? { voicePrompt: item.voicePrompt } : {}),
         ...(item.language ? { language: item.language } : {}),
         generations: restoredGen ? [restoredGen] : [],
@@ -677,28 +674,7 @@ export function TextToSpeechScreen() {
         />
 
         {/* Delete all models button (always visible to reset out-of-sync / false-complete state) */}
-        <div className="px-6 py-2 flex justify-end">
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={async () => {
-              if (
-                window.confirm(
-                  'Delete all downloaded models and reset state? This cannot be undone.',
-                )
-              ) {
-                const ok = await deleteAllModels()
-                if (!ok) {
-                  window.alert('Failed to delete models. Check logs for details.')
-                }
-              }
-            }}
-            className="border-destructive hover:bg-destructive/20 text-destructive hover:text-white text-xs font-medium px-3 py-2"
-          >
-            🗑️ Delete All Models
-          </Button>
-        </div>
+
 
         {!allRequiredReady ? (
           <InstallRequiredModelsView />
@@ -1082,39 +1058,9 @@ export function TextToSpeechScreen() {
         onStartRecord={recording.handleStartRecord}
         onStopRecord={recording.handleStopRecord}
         onTogglePlayRecording={recording.handleTogglePlayRecording}
-        onStreamReady={(stream) => {
-          try {
-            recording.recordedStreamRef.current = stream
-            recording.audioChunksRef.current = []
-            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-              ? 'audio/webm;codecs=opus'
-              : MediaRecorder.isTypeSupported('audio/webm')
-                ? 'audio/webm'
-                : MediaRecorder.isTypeSupported('audio/mp4')
-                  ? 'audio/mp4'
-                  : ''
-            const mr = mimeType
-              ? new MediaRecorder(stream, { mimeType })
-              : new MediaRecorder(stream)
-            mr.ondataavailable = (e) => {
-              if (e.data && e.data.size > 0) {
-                recording.audioChunksRef.current.push(e.data)
-              }
-            }
-            mr.onstop = () => {
-              if (recording.audioChunksRef.current.length > 0) {
-                const blob = new Blob(recording.audioChunksRef.current, {
-                  type: mr.mimeType || 'audio/webm',
-                })
-                updateState({ recordedAudioUrl: URL.createObjectURL(blob) })
-              }
-            }
-            mr.start(100)
-            recording.mediaRecorderRef.current = mr
-          } catch (err) {
-            console.warn('MediaRecorder error:', err)
-          }
-        }}
+        recordedStream={recording.activeStream}
+        micError={recording.micError}
+        onOpenMicrophoneSettings={recording.handleOpenMicrophoneSettings}
         onStreamEnd={recording.stopMicrophone}
         recordedAudioUrl={state.recordedAudioUrl}
         onSaveVoice={handleSaveVoice}

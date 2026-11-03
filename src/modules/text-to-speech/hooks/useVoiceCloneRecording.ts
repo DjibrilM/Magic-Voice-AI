@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 import { TextToSpeechState } from '../types'
 
 export interface UseVoiceCloneRecordingProps {
@@ -11,6 +11,8 @@ export function useVoiceCloneRecording({ state, updateState }: UseVoiceCloneReco
   const recordedStreamRef = useRef<MediaStream | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
+  const [activeStream, setActiveStream] = useState<MediaStream | null>(null)
+  const [micError, setMicError] = useState<string | null>(null)
 
   // Synchronously release all microphone hardware streams & recorder
   const stopMicrophone = useCallback(() => {
@@ -48,6 +50,7 @@ export function useVoiceCloneRecording({ state, updateState }: UseVoiceCloneReco
       } catch {}
       recordedStreamRef.current = null
     }
+    setActiveStream(null)
   }, [])
 
   // Cleanup microphone and active audio on unmount
@@ -85,11 +88,45 @@ export function useVoiceCloneRecording({ state, updateState }: UseVoiceCloneReco
     }
     stopMicrophone()
     audioChunksRef.current = []
+    setMicError(null)
+
+    // 1. Proactively request/check macOS host system microphone permissions via Electron IPC
+    if (typeof window !== 'undefined' && window.ipcRenderer) {
+      try {
+        const permResult = await window.ipcRenderer.invoke('system:requestMicrophonePermission')
+        if (permResult && !permResult.granted && permResult.status === 'denied') {
+          setMicError('Microphone permission is denied in macOS System Settings. Please enable microphone access for Magic-Voice AI.')
+          updateState({ isRecording: false })
+          return
+        }
+      } catch (ipcErr) {
+        console.warn('Microphone permission check via IPC failed:', ipcErr)
+      }
+    }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      })
       recordedStreamRef.current = stream
-      const mediaRecorder = new MediaRecorder(stream)
+      setActiveStream(stream)
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : MediaRecorder.isTypeSupported('audio/mp4')
+            ? 'audio/mp4'
+            : ''
+
+      const mediaRecorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream)
+
       mediaRecorderRef.current = mediaRecorder
 
       mediaRecorder.ondataavailable = (event) => {
@@ -100,25 +137,44 @@ export function useVoiceCloneRecording({ state, updateState }: UseVoiceCloneReco
 
       mediaRecorder.onstop = () => {
         if (audioChunksRef.current.length > 0) {
-          const mimeType = mediaRecorder.mimeType || 'audio/webm'
-          const blob = new Blob(audioChunksRef.current, { type: mimeType })
+          const actualMime = mediaRecorder.mimeType || 'audio/webm'
+          const blob = new Blob(audioChunksRef.current, { type: actualMime })
           const url = URL.createObjectURL(blob)
           updateState({ recordedAudioUrl: url })
         }
       }
 
-      mediaRecorder.start(250)
+      mediaRecorder.start(200)
       updateState({
         isPlayingRecording: false,
         recordedDuration: 0,
         recordedAudioUrl: null,
         isRecording: true,
       })
-    } catch (err) {
+    } catch (err: any) {
       console.error('Microphone access failed:', err)
+      setActiveStream(null)
       updateState({ isRecording: false })
+      const isDenied = err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError'
+      const isNotFound = err?.name === 'NotFoundError' || err?.name === 'DevicesNotFoundError'
+      const msg = isDenied
+        ? 'Microphone permission was denied. Please allow microphone access in macOS System Settings > Privacy & Security > Microphone.'
+        : isNotFound
+          ? 'No microphone input device was detected on your computer.'
+          : err?.message || 'Failed to access microphone.'
+      setMicError(msg)
     }
   }, [stopMicrophone, updateState])
+
+  const handleOpenMicrophoneSettings = useCallback(async () => {
+    if (typeof window !== 'undefined' && window.ipcRenderer) {
+      try {
+        await window.ipcRenderer.invoke('system:openMicrophoneSettings')
+      } catch (err) {
+        console.warn('Failed to open microphone settings:', err)
+      }
+    }
+  }, [])
 
   const handleStopRecord = useCallback(() => {
     stopMicrophone()
@@ -135,6 +191,7 @@ export function useVoiceCloneRecording({ state, updateState }: UseVoiceCloneReco
         if (state.isRecording) updateState({ isRecording: false })
         stopMicrophone()
       }
+      setMicError(null)
       updateState({ cloneMode: mode })
     },
     [state.isRecording, stopMicrophone, updateState]
@@ -201,6 +258,9 @@ export function useVoiceCloneRecording({ state, updateState }: UseVoiceCloneReco
     recordedStreamRef,
     mediaRecorderRef,
     audioChunksRef,
+    activeStream,
+    micError,
+    handleOpenMicrophoneSettings,
     stopMicrophone,
     handleStartRecord,
     handleStopRecord,

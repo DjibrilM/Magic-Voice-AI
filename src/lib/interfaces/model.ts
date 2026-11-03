@@ -6,7 +6,7 @@ export interface LanguageOption {
   isAuto?: boolean
 }
 
-export interface ChatterboxModel {
+export interface VoiceModelOption {
   id: string
   name: string
   badge: string

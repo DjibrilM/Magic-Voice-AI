@@ -17,72 +17,16 @@ import {
 
 export const defaultModels: VoiceModelInfo[] = [
   {
-    id: 'chatterbox-t3-turbo-q8_0',
-    name: 'Chatterbox T3 Turbo Backbone (Q8_0 GGUF)',
-    descriptorName: 'TTS_T3_TURBO_EN_CHATTERBOX_Q8_0',
-    sizeBytes: 487091392,
-    sizeFormatted: '487 MB',
-    description:
-      'Fast and expressive autoregressive T3 speech backbone with high dynamic range and instant voice cloning.',
-    category: 'backbone',
-    engine: 'chatterbox',
-    required: false,
-    downloaded: false,
-    status: 'idle',
-  },
-  {
-    id: 'chatterbox-s3gen-q8_0',
-    name: 'Chatterbox S3Gen Acoustic Vocoder (Q8_0 GGUF)',
-    descriptorName: 'TTS_S3GEN_EN_CHATTERBOX_Q8_0',
-    sizeBytes: 829702464,
-    sizeFormatted: '830 MB',
-    description:
-      'Companion diffusion vocoder for realistic breath, timbre, and natural prosody in Chatterbox speech.',
-    category: 'vocoder',
-    engine: 'chatterbox',
-    required: false,
-    downloaded: false,
-    status: 'idle',
-  },
-  {
-    id: 'chatterbox-t3-multilingual-q8_0',
-    name: 'Chatterbox T3 Multilingual (23 Languages, Q8_0)',
-    descriptorName: 'TTS_T3_MULTILINGUAL_CHATTERBOX_Q8_0',
-    sizeBytes: 487091392,
-    sizeFormatted: '487 MB',
-    description:
-      'Multilingual T3 speech model supporting 23 international languages with cross-lingual voice cloning.',
-    category: 'backbone',
-    engine: 'chatterbox',
-    required: false,
-    downloaded: false,
-    status: 'idle',
-  },
-  {
-    id: 'chatterbox-s3gen-multilingual-q8_0',
-    name: 'Chatterbox S3Gen Multilingual Vocoder (Q8_0)',
-    descriptorName: 'TTS_S3GEN_MULTILINGUAL_CHATTERBOX_Q8_0',
-    sizeBytes: 829702464,
-    sizeFormatted: '830 MB',
-    description:
-      'Multilingual diffusion vocoder generating clean, natural acoustic waveforms across 23 languages.',
-    category: 'vocoder',
-    engine: 'chatterbox',
-    required: false,
-    downloaded: false,
-    status: 'idle',
-  },
-  {
     id: 'cosyvoice3-llm-q8_0',
-    name: 'CosyVoice 3 Neural Speech Backbone (0.5B, Q8_0)',
+    name: 'CosyVoice 3 Speech Backbone (0.5B, Q8_0)',
     descriptorName: 'TTS_COSYVOICE3_LLM_COSYVOICE_Q8_0',
     sizeBytes: 973496000,
     sizeFormatted: '973 MB',
     description:
-      'Zero-shot neural speech generator with instruct conditioning for voice design & cloning (optimized for Apple Silicon / M-series).',
+      'Zero-shot speech generator with instruct conditioning for voice design & cloning (optimized for Apple Silicon / M-series).',
     category: 'backbone',
     engine: 'cosyvoice3',
-    required: false,
+    required: true,
     downloaded: false,
     status: 'idle',
   },
@@ -96,21 +40,7 @@ export const defaultModels: VoiceModelInfo[] = [
       'Uncompressed FP16 flow-matching ODE acoustic generator for pristine vocal detail, breath dynamics, and zero metallic distortion.',
     category: 'vocoder',
     engine: 'cosyvoice3',
-    required: false,
-    downloaded: false,
-    status: 'idle',
-  },
-  {
-    id: 'lavasr-enhancer',
-    name: 'Lava-SR 48kHz Neural Enhancer (FP16)',
-    descriptorName: 'TTS_ENHANCER_LAVASR_FP16',
-    sizeBytes: 28051008,
-    sizeFormatted: '28 MB',
-    description:
-      'Deep spectral bandwidth upsampler and harmonic clarity enhancer for studio-grade 48kHz ultra-HD audio.',
-    category: 'enhancer',
-    engine: 'shared',
-    required: false,
+    required: true,
     downloaded: false,
     status: 'idle',
   },
@@ -121,10 +51,10 @@ export const defaultModels: VoiceModelInfo[] = [
     sizeBytes: 496605536,
     sizeFormatted: '496 MB',
     description:
-      'Neural speech tokenizer required for high-fidelity instant voice cloning in CosyVoice 3.',
-    category: 'vocoder',
+      'Speech tokenizer required for high-fidelity instant voice cloning in CosyVoice 3.',
+    category: 'speech-tokenizer',
     engine: 'cosyvoice3',
-    required: false,
+    required: true,
     downloaded: false,
     status: 'idle',
   },
@@ -136,8 +66,22 @@ export const defaultModels: VoiceModelInfo[] = [
     sizeFormatted: '27 MB',
     description:
       'Deep acoustic timbre and speaker embedding extractor for voice cloning in CosyVoice 3.',
-    category: 'multilingual',
+    category: 'speaker-encoder',
     engine: 'cosyvoice3',
+    required: true,
+    downloaded: false,
+    status: 'idle',
+  },
+  {
+    id: 'lavasr-enhancer',
+    name: 'Lava-SR 48kHz Enhancer (FP16)',
+    descriptorName: 'TTS_ENHANCER_LAVASR_FP16',
+    sizeBytes: 28051008,
+    sizeFormatted: '28 MB',
+    description:
+      'Deep spectral bandwidth upsampler and harmonic clarity enhancer for studio-grade 48kHz ultra-HD audio.',
+    category: 'enhancer',
+    engine: 'shared',
     required: false,
     downloaded: false,
     status: 'idle',
@@ -163,30 +107,14 @@ export const modelsListAtom = atom<VoiceModelInfo[]>((get) => {
   return status?.models && status.models.length > 0 ? status.models : defaultModels
 })
 
-// Derived atom: true ONLY when all required models for the selected engine are ready
+// Derived atom: true ONLY when all required models for CosyVoice 3 are ready
 export const allRequiredModelsReadyAtom = atom<boolean>((get) => {
   const models = get(modelsListAtom)
-  const currentEngine = get(selectedVoiceEngineAtom)
-
-  const requiredModels = models.filter((m) => {
-    if (currentEngine === 'cosyvoice3') {
-      return m.engine === 'cosyvoice3' || m.engine === 'shared' || m.required
-    }
-    if (currentEngine === 'chatterbox') {
-      const hasBackbone = models.some(m => m.engine === 'chatterbox' && m.category === 'backbone' && m.downloaded)
-      const hasVocoder = models.some(m => m.engine === 'chatterbox' && m.category === 'vocoder' && m.downloaded)
-      return hasBackbone && hasVocoder
-    }
-    return m.required
-  })
-
-  if (currentEngine === 'chatterbox') {
-    const hasBackbone = models.some(m => m.engine === 'chatterbox' && m.category === 'backbone' && m.downloaded)
-    const hasVocoder = models.some(m => m.engine === 'chatterbox' && m.category === 'vocoder' && m.downloaded)
-    return hasBackbone && hasVocoder
+  const requiredModels = models.filter((m) => m.engine === 'cosyvoice3' && m.required)
+  if (requiredModels.length === 0) {
+    const coreIds = ['cosyvoice3-llm-q8_0', 'cosyvoice3-flow-fp16', 'cosyvoice3-s3tok-fp16', 'cosyvoice3-campplus-fp32']
+    return coreIds.every((id) => models.some((m) => m.id === id && m.downloaded))
   }
-
-  if (requiredModels.length === 0) return false
   return requiredModels.every((m) => m.downloaded)
 })
 
@@ -202,18 +130,14 @@ export function useModels() {
   const models = useAtomValue(modelsListAtom)
   const allRequiredReady = useAtomValue(allRequiredModelsReadyAtom)
 
-  // Active models scoped to the current engine
+  // Active models scoped to CosyVoice 3 and shared enhancers
   const activeEngineModels = models.filter(
-    (model) => model.engine === selectedEngine || model.engine === 'shared'
+    (model) => model.engine === 'cosyvoice3' || model.engine === 'shared'
   )
 
-  // Required models for this engine
+  // Required models for synthesis
   const requiredModels = activeEngineModels.filter(
-    (model) =>
-      model.required ||
-      (selectedEngine === 'cosyvoice3'
-        ? model.engine === 'cosyvoice3' || model.engine === 'shared'
-        : model.id === 'chatterbox-t3-turbo-q8_0' || model.id === 'chatterbox-s3gen-q8_0')
+    (model) => model.required || model.engine === 'cosyvoice3'
   )
 
   const totalRequiredSizeBytes = requiredModels.reduce(
