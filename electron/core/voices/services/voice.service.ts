@@ -21,26 +21,128 @@ export class VoiceService {
   }
 
   public async listCustomVoices(): Promise<CustomVoiceRecord[]> {
-    if (this.repository) {
-      return this.repository.listCustomVoices()
+    if (!this.repository) {
+      return []
     }
-    return []
+    const records = await this.repository.listCustomVoices()
+    return records.map((record) => {
+      const resolvedSample = this.resolveVoiceAssetDiskPath(
+        record.sampleUrl || (record.referenceAudioName ? `/voices/custom/${record.referenceAudioName}` : undefined)
+      )
+      const resolvedAvatar = this.resolveVoiceAssetDiskPath(
+        record.avatarUrl || '/voices/sterling.jpg'
+      )
+      return {
+        ...record,
+        sampleUrl: resolvedSample ? this.toEchoMediaUrl(resolvedSample) : record.sampleUrl,
+        avatarUrl: resolvedAvatar ? this.toEchoMediaUrl(resolvedAvatar) : record.avatarUrl,
+      }
+    })
   }
+
+  public toEchoMediaUrl(diskPath: string): string {
+    const normalized = diskPath.replace(/\\/g, '/')
+    const withLeadingSlash = normalized.startsWith('/') ? normalized : `/${normalized}`
+    return `echo-media://${encodeURI(withLeadingSlash)}`
+  }
+
+  /**
+   * Return all existing candidate `voices` root directories across dev and packaged builds
+   */
+  public getVoicesRootDirectories(): string[] {
+    const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath
+    const publicDir = process.env.VITE_PUBLIC || path.join(process.cwd(), 'public')
+    const appPath = app ? app.getAppPath() : process.cwd()
+    const userDataVoices = app ? path.join(app.getPath('userData'), 'voices') : ''
+
+    const candidates = [
+      ...(resourcesPath
+        ? [
+            path.join(resourcesPath, 'app.asar.unpacked', 'voices'),
+            path.join(resourcesPath, 'app.asar.unpacked', 'dist', 'voices'),
+            path.join(resourcesPath, 'voices'),
+          ]
+        : []),
+      ...(userDataVoices ? [userDataVoices] : []),
+      path.join(publicDir, 'voices'),
+      path.join(appPath, 'dist', 'voices'),
+      path.join(appPath, 'public', 'voices'),
+      path.join(process.cwd(), 'public', 'voices'),
+    ]
+
+    const unique = Array.from(new Set(candidates))
+    return unique.filter((dir) => {
+      try {
+        return fs.existsSync(dir)
+      } catch {
+        return false
+      }
+    })
+  }
+
+  /**
+   * Resolve a `/voices/...` URL, `echo-media://...` URL, or relative filename to an actual disk file path
+   */
+  public resolveVoiceAssetDiskPath(rawPath?: string, sampleFolder?: string): string | null {
+    if (!rawPath || typeof rawPath !== 'string') return null
+
+    if (rawPath.startsWith('echo-media://')) {
+      const stripped = decodeURIComponent(rawPath.replace(/^echo-media:\/\//, ''))
+      const normalized = stripped.startsWith('/') ? stripped : `/${stripped}`
+      if (fs.existsSync(normalized)) return normalized
+    }
+
+    if (path.isAbsolute(rawPath) && fs.existsSync(rawPath)) {
+      return rawPath
+    }
+
+    const cleaned = rawPath
+      .replace(/^\.?\//, '')
+      .replace(/^voices\//, '')
+
+    const customDir = this.getCustomVoicesDirectory()
+    const voicesRoots = this.getVoicesRootDirectories()
+
+    const candidates: string[] = []
+
+    if (cleaned.startsWith('custom/')) {
+      const sub = cleaned.replace(/^custom\//, '')
+      candidates.push(path.join(customDir, sub))
+    }
+
+    for (const root of voicesRoots) {
+      candidates.push(path.join(root, cleaned))
+      if (sampleFolder && !cleaned.startsWith('samples/')) {
+        candidates.push(path.join(root, 'samples', sampleFolder, cleaned))
+      }
+    }
+
+    for (const candidate of candidates) {
+      try {
+        if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+          return candidate
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    return null
+  }
+
   /**
    * Resolve root samples directory across dev server and production builds
    */
   public getSamplesDirectory(): string | null {
-    const publicDir = process.env.VITE_PUBLIC || path.join(process.cwd(), 'public')
-    const candidates = [
-      path.join(publicDir, 'voices', 'samples'),
-      path.join(process.cwd(), 'public', 'voices', 'samples'),
-      path.join(app.getAppPath(), 'public', 'voices', 'samples'),
-      path.join(app.getAppPath(), 'dist', 'voices', 'samples'),
-    ]
-
-    for (const dir of candidates) {
-      if (fs.existsSync(dir)) {
-        return dir
+    const roots = this.getVoicesRootDirectories()
+    for (const root of roots) {
+      const samplesDir = path.join(root, 'samples')
+      try {
+        if (fs.existsSync(samplesDir) && fs.statSync(samplesDir).isDirectory()) {
+          return samplesDir
+        }
+      } catch {
+        // ignore
       }
     }
     return null
@@ -137,7 +239,35 @@ export class VoiceService {
 
       const content = fs.readFileSync(jsonPath, 'utf-8')
       const parsed = JSON.parse(content)
-      const voices: VoiceItem[] = Array.isArray(parsed) ? parsed : parsed.voices || []
+      const rawVoices: VoiceItem[] = Array.isArray(parsed) ? parsed : parsed.voices || []
+
+      const voices: VoiceItem[] = rawVoices.map((item) => {
+        const rawAudio = item.audio || item.sampleUrl || ''
+        const rawImage = item.image || item.avatarUrl || '/voices/sterling.jpg'
+
+        const diskAudio = this.resolveVoiceAssetDiskPath(rawAudio, folder)
+        const diskImage = this.resolveVoiceAssetDiskPath(rawImage, folder)
+
+        const sampleUrl = diskAudio
+          ? this.toEchoMediaUrl(diskAudio)
+          : rawAudio.startsWith('/')
+            ? rawAudio
+            : `/voices/samples/${folder}/${rawAudio}`
+
+        const avatarUrl = diskImage
+          ? this.toEchoMediaUrl(diskImage)
+          : rawImage.startsWith('/')
+            ? rawImage
+            : `/voices/${rawImage}`
+
+        return {
+          ...item,
+          audio: sampleUrl,
+          sampleUrl,
+          image: avatarUrl,
+          avatarUrl,
+        }
+      })
 
       return { success: true, voices }
     } catch (err) {
@@ -147,11 +277,13 @@ export class VoiceService {
   }
 
   /**
-   * Resolve or create the custom voices directory inside public/voices/custom
+   * Resolve or create the writable custom voices directory
    */
   public getCustomVoicesDirectory(): string {
-    const publicDir = process.env.VITE_PUBLIC || path.join(process.cwd(), 'public')
-    const customDir = path.join(publicDir, 'voices', 'custom')
+    const isPackaged = app ? app.isPackaged : false
+    const customDir = isPackaged
+      ? path.join(app.getPath('userData'), 'voices', 'custom')
+      : path.join(process.cwd(), 'public', 'voices', 'custom')
     if (!fs.existsSync(customDir)) {
       fs.mkdirSync(customDir, { recursive: true })
     }
@@ -224,6 +356,14 @@ export class VoiceService {
         }
       }
 
+      const resolvedSampleUrl = this.toEchoMediaUrl(finalPath)
+      const resolvedAvatarDisk = finalAvatarUrl
+        ? this.resolveVoiceAssetDiskPath(finalAvatarUrl)
+        : this.resolveVoiceAssetDiskPath('/voices/sterling.jpg')
+      const resolvedAvatarUrl = resolvedAvatarDisk
+        ? this.toEchoMediaUrl(resolvedAvatarDisk)
+        : finalAvatarUrl || '/voices/sterling.jpg'
+
       if (this.repository) {
         await this.repository.saveCustomVoice({
           id: payload.voiceId,
@@ -238,8 +378,8 @@ export class VoiceService {
       return {
         success: true,
         filePath: finalPath,
-        sampleUrl: finalSampleUrl,
-        avatarUrl: finalAvatarUrl,
+        sampleUrl: resolvedSampleUrl,
+        avatarUrl: resolvedAvatarUrl,
       }
     } catch (err) {
       console.error('[VoiceService] Failed to save custom voice:', err)

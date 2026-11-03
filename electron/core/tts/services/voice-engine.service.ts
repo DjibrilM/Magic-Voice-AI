@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { execFileSync } from "node:child_process";
+import { app } from "electron";
 import * as qvacSdk from "@qvac/sdk";
 
 import type {
@@ -506,29 +507,88 @@ function parseTextAndPauses(rawText: string): TextOrPauseSegment[] {
 }
 
 /**
- * Resolves a reference audio input (URL path, relative path, or absolute path)
- * and ensures it is converted to a 24kHz 16-bit mono PCM WAV file required
- * by QVAC/dr_wav for CosyVoice 3 voice cloning and speaker embeddings.
+ * Resolves a reference audio input (`echo-media://`, `file://`, `/voices/...`, relative path, or absolute path)
+ * across development and packaged builds, and ensures it is converted to a 24kHz 16-bit mono PCM WAV file
+ * on the real OS filesystem required by QVAC/dr_wav for CosyVoice 3 voice cloning and speaker embeddings.
  */
 function prepareReferenceAudioWav(inputPath?: string): string | undefined {
   if (!inputPath || typeof inputPath !== "string") return undefined;
 
-  let resolved = inputPath;
-  if (!fs.existsSync(resolved)) {
-    const pub = path.resolve(process.cwd(), "public", inputPath.replace(/^\//, ""));
-    if (fs.existsSync(pub)) resolved = pub;
+  let cleanedInput = inputPath.trim();
+  if (cleanedInput.startsWith("echo-media://")) {
+    const raw = decodeURIComponent(cleanedInput.replace(/^echo-media:\/\//, ""));
+    cleanedInput = raw.startsWith("/") ? raw : `/${raw}`;
+  } else if (cleanedInput.startsWith("file://")) {
+    cleanedInput = decodeURIComponent(cleanedInput.replace(/^file:\/\//, ""));
   }
-  if (!fs.existsSync(resolved)) {
-    const ws = path.resolve(process.cwd(), inputPath);
-    if (fs.existsSync(ws)) resolved = ws;
+
+  const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
+  const publicDir = process.env.VITE_PUBLIC || path.join(process.cwd(), "public");
+  const appPath = app ? app.getAppPath() : process.cwd();
+  const userDataDir = app ? app.getPath("userData") : "";
+  const relNoLeadingSlash = cleanedInput.replace(/^\.?\//, "");
+  const relUnderVoices = relNoLeadingSlash.replace(/^voices\//, "");
+
+  const candidatePaths: string[] = [
+    cleanedInput,
+    ...(resourcesPath
+      ? [
+          path.join(resourcesPath, "app.asar.unpacked", relNoLeadingSlash),
+          path.join(resourcesPath, "app.asar.unpacked", "voices", relUnderVoices),
+          path.join(resourcesPath, "app.asar.unpacked", "dist", relNoLeadingSlash),
+          path.join(resourcesPath, "voices", relUnderVoices),
+        ]
+      : []),
+    ...(userDataDir
+      ? [
+          path.join(userDataDir, relNoLeadingSlash),
+          path.join(userDataDir, "voices", relUnderVoices),
+        ]
+      : []),
+    path.join(publicDir, relNoLeadingSlash),
+    path.join(appPath, "dist", relNoLeadingSlash),
+    path.join(appPath, "public", relNoLeadingSlash),
+    path.resolve(process.cwd(), "public", relNoLeadingSlash),
+    path.resolve(process.cwd(), cleanedInput),
+  ];
+
+  let resolved: string | undefined;
+  for (const candidate of candidatePaths) {
+    try {
+      if (candidate && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        resolved = candidate;
+        break;
+      }
+    } catch {
+      // ignore
+    }
   }
-  if (!fs.existsSync(resolved)) return undefined;
+
+  if (!resolved) return undefined;
+
+  const cacheDir = path.join(os.tmpdir(), "echo-voice-cache");
+  fs.mkdirSync(cacheDir, { recursive: true });
+
+  // If the file resides inside an .asar archive, extract it to cacheDir first so external
+  // binaries (afconvert) and native C++/Bare workers (@qvac/sdk) can read it from disk.
+  if (resolved.includes(".asar")) {
+    try {
+      const extInAsar = path.extname(resolved).toLowerCase() || ".mp3";
+      const extractedPath = path.join(cacheDir, `asar_${path.basename(resolved, extInAsar)}${extInAsar}`);
+      if (!fs.existsSync(extractedPath)) {
+        const data = fs.readFileSync(resolved);
+        fs.writeFileSync(extractedPath, data);
+      }
+      resolved = extractedPath;
+    } catch (err) {
+      console.warn(`[Echo Voice Engine] Failed to extract ${resolved} from asar:`, err);
+      return undefined;
+    }
+  }
 
   const ext = path.extname(resolved).toLowerCase();
   if (ext === ".wav") return resolved;
 
-  const cacheDir = path.join(os.tmpdir(), "echo-voice-cache");
-  fs.mkdirSync(cacheDir, { recursive: true });
   const stat = fs.statSync(resolved);
   const outName = `${path.basename(resolved, ext)}_${stat.size}_${Math.floor(stat.mtimeMs)}.wav`;
   const outPath = path.join(cacheDir, outName);
@@ -688,14 +748,12 @@ export class VoiceEngineService {
       // High quality default reference voice ensures CAM++ speaker encoder and S3Tok conditioning
       // are activated, avoiding muffled, noisy zero-shot unconditioned audio.
       const defaultCandidates = [
-        path.resolve(process.cwd(), "public", "voices", "samples", "en", "voice_en_male_1.mp3"),
-        path.resolve(process.cwd(), "public", "voices", "samples", "en", "voice_en_female_1.mp3"),
+        "/voices/samples/en/voice_en_male_1.mp3",
+        "/voices/samples/en/voice_en_female_1.mp3",
       ];
       for (const candidate of defaultCandidates) {
-        if (fs.existsSync(candidate)) {
-          refWavPath = prepareReferenceAudioWav(candidate);
-          if (refWavPath) break;
-        }
+        refWavPath = prepareReferenceAudioWav(candidate);
+        if (refWavPath) break;
       }
     }
     const hasCloningModels =
@@ -872,10 +930,7 @@ export class VoiceEngineService {
         const round = activeRounds[i];
         let roundRefAudio = round.referenceAudioSrc || options.referenceAudioSrc;
         if (!roundRefAudio) {
-          const defaultVoice = path.resolve(process.cwd(), "public", "voices", "samples", "en", "voice_en_male_1.mp3");
-          if (fs.existsSync(defaultVoice)) {
-            roundRefAudio = defaultVoice;
-          }
+          roundRefAudio = "/voices/samples/en/voice_en_male_1.mp3";
         }
         const roundRawEmotion = round.emotion?.toLowerCase() || "";
         const roundEmotion = validEmotions.includes(roundRawEmotion) ? roundRawEmotion : detectedEmotion;

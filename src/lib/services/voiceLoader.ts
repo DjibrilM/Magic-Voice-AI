@@ -79,17 +79,25 @@ export function normalizeVoiceItem(raw: VoiceRawItem, folder: string, pkg?: Voic
   const languageCode = raw.languageCode || info.languageCode || pkg?.code || folder
   const languageName = raw.languageName || info.languageName || pkg?.language || folder
 
-  // Audio path resolution: if relative (e.g. "voice_en_male_1.mp3"), prepend folder sample path
+  // Audio path resolution: preserve echo-media:// or http(s)://, otherwise prepend folder sample path
   const rawAudio = raw.audio || raw.sampleUrl || ''
   const sampleUrl =
-    rawAudio.startsWith('http') || rawAudio.startsWith('/')
+    rawAudio.startsWith('echo-media://') ||
+    rawAudio.startsWith('http') ||
+    rawAudio.startsWith('data:') ||
+    rawAudio.startsWith('blob:') ||
+    rawAudio.startsWith('/')
       ? rawAudio
       : `/voices/samples/${folder}/${rawAudio}`
 
   // Image path resolution
   const rawImage = raw.image || raw.avatarUrl || '/voices/sterling.jpg'
   const avatarUrl =
-    rawImage.startsWith('http') || rawImage.startsWith('/')
+    rawImage.startsWith('echo-media://') ||
+    rawImage.startsWith('http') ||
+    rawImage.startsWith('data:') ||
+    rawImage.startsWith('blob:') ||
+    rawImage.startsWith('/')
       ? rawImage
       : `/voices/${rawImage}`
 
@@ -171,14 +179,29 @@ export async function scanVoiceSamples(): Promise<VoicePackageInfo[]> {
   scanInFlight = (async () => {
     // 1. Attempt Electron IPC scanning if running in desktop environment
     try {
-      const ipc = (window as unknown as { ipcRenderer?: { invoke: (channel: string) => Promise<{ success: boolean; packages?: VoicePackageInfo[] }> } }).ipcRenderer
+      const ipc = (
+        window as unknown as {
+          ipcRenderer?: {
+            invoke: (
+              channel: string,
+              payload?: unknown
+            ) => Promise<{ success: boolean; packages?: VoicePackageInfo[] }>
+          }
+        }
+      ).ipcRenderer
       if (ipc?.invoke) {
-        const res = await ipc.invoke('scan-voice-samples')
-        if (res?.success && Array.isArray(res.packages) && res.packages.length > 0) {
-          cachedPackages = res.packages
-          updateDynamicLanguages(cachedPackages)
-          notifyPackageListeners()
-          return cachedPackages
+        for (const channel of ['voices:scan', 'scan-voice-samples']) {
+          try {
+            const res = await ipc.invoke(channel)
+            if (res?.success && Array.isArray(res.packages) && res.packages.length > 0) {
+              cachedPackages = res.packages
+              updateDynamicLanguages(cachedPackages)
+              notifyPackageListeners()
+              return cachedPackages
+            }
+          } catch {
+            // try next channel
+          }
         }
       }
     } catch (err) {
@@ -186,22 +209,24 @@ export async function scanVoiceSamples(): Promise<VoicePackageInfo[]> {
     }
 
     // 2. Web fallback: fetch the samples index.json
-    try {
-      const res = await fetch('/voices/samples/index.json')
-      if (res.ok) {
-        const contentType = res.headers.get('content-type') || ''
-        if (contentType.includes('json') || contentType.includes('text')) {
-          const data = await res.json()
-          if (Array.isArray(data) && data.length > 0) {
-            cachedPackages = data
-            updateDynamicLanguages(cachedPackages)
-            notifyPackageListeners()
-            return cachedPackages
+    for (const indexUrl of ['/voices/samples/index.json', './voices/samples/index.json']) {
+      try {
+        const res = await fetch(indexUrl)
+        if (res.ok) {
+          const contentType = res.headers.get('content-type') || ''
+          if (!contentType.includes('text/html')) {
+            const data = await res.json()
+            if (Array.isArray(data) && data.length > 0) {
+              cachedPackages = data
+              updateDynamicLanguages(cachedPackages)
+              notifyPackageListeners()
+              return cachedPackages
+            }
           }
         }
+      } catch (err) {
+        console.debug(`[voiceLoader] Failed to fetch ${indexUrl}:`, err)
       }
-    } catch (err) {
-      console.debug('[voiceLoader] Failed to fetch /voices/samples/index.json:', err)
     }
 
     // 3. Fallback: probe known folders for info.json
@@ -326,11 +351,43 @@ export async function loadVoicesForPackage(pkgOrFolder: VoicePackageInfo | strin
   }
 
   const loadPromise = (async () => {
+    // 1. First try loading via Electron IPC (`voices:load`) so packaged file:// builds
+    // read voices.json directly from disk and receive resolved echo-media:// URLs.
+    try {
+      const ipc = (
+        window as unknown as {
+          ipcRenderer?: {
+            invoke: (
+              channel: string,
+              payload?: unknown
+            ) => Promise<{ success: boolean; voices?: VoiceRawItem[] }>
+          }
+        }
+      ).ipcRenderer
+      if (ipc?.invoke) {
+        const res = await ipc.invoke('voices:load', {
+          folder: pkg!.folder,
+          list: pkg!.list,
+        })
+        if (res?.success && Array.isArray(res.voices) && res.voices.length > 0) {
+          const loaded = res.voices.map((item) => normalizeVoiceItem(item, pkg!.folder, pkg))
+          voicesCacheByFolder.set(cacheKey, loaded)
+          return loaded
+        }
+      }
+    } catch (err) {
+      console.debug(`[voiceLoader] IPC voices:load failed for ${pkg!.folder}:`, err)
+    }
+
+    // 2. Web / HTTP fallback
     const candidateUrls = [
       pkg!.listUrl,
       `/voices/samples/${pkg!.folder}/json/voices.json`,
+      `./voices/samples/${pkg!.folder}/json/voices.json`,
       `/voices/samples/${pkg!.folder}/json/${pkg!.code}.json`,
+      `./voices/samples/${pkg!.folder}/json/${pkg!.code}.json`,
       `/voices/samples/${pkg!.folder}/voices.json`,
+      `./voices/samples/${pkg!.folder}/voices.json`,
     ]
 
     let loadedVoices: Voice[] = []
