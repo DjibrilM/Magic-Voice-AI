@@ -82,7 +82,7 @@ export const defaultModels: VoiceModelInfo[] = [
       'Deep spectral bandwidth upsampler and harmonic clarity enhancer for studio-grade 48kHz ultra-HD audio.',
     category: 'enhancer',
     engine: 'shared',
-    required: false,
+    required: true,
     downloaded: false,
     status: 'idle',
   },
@@ -107,16 +107,24 @@ export const modelsListAtom = atom<VoiceModelInfo[]>((get) => {
   return status?.models && status.models.length > 0 ? status.models : defaultModels
 })
 
-// Derived atom: true ONLY when all required models for CosyVoice 3 are ready
+// Derived atom: true ONLY when all 5 models are verified on disk and zero downloads are active
 export const allRequiredModelsReadyAtom = atom<boolean>((get) => {
+  const isChecking = get(isCheckingModelsAtom)
+  if (isChecking) return false
+
+  const downloading = get(downloadingModelsAtom)
+  if (Object.keys(downloading).length > 0) return false
+
   const models = get(modelsListAtom)
-  const requiredModels = models.filter((m) => m.engine === 'cosyvoice3' && m.required)
-  if (requiredModels.length === 0) {
-    const coreIds = ['cosyvoice3-llm-q8_0', 'cosyvoice3-flow-fp16', 'cosyvoice3-s3tok-fp16', 'cosyvoice3-campplus-fp32']
-    return coreIds.every((id) => models.some((m) => m.id === id && m.downloaded))
-  }
-  return requiredModels.every((m) => m.downloaded)
+  const activeModels = models.filter((m) => m.engine === 'cosyvoice3' || m.engine === 'shared')
+  if (activeModels.length === 0) return false
+
+  return activeModels.every((m) => m.downloaded && m.status !== 'downloading')
 })
+
+let lastCheckedEngine: VoiceEngineType | null = null
+let activeProgressListeners = 0
+let globalProgressUnsubscribe: (() => void) | null = null
 
 // ============================================================================
 // Hook: useModels
@@ -135,9 +143,9 @@ export function useModels() {
     (model) => model.engine === 'cosyvoice3' || model.engine === 'shared'
   )
 
-  // Required models for synthesis
+  // Required models for synthesis (all 5 active models)
   const requiredModels = activeEngineModels.filter(
-    (model) => model.required || model.engine === 'cosyvoice3'
+    (model) => model.required || model.engine === 'cosyvoice3' || model.engine === 'shared'
   )
 
   const totalRequiredSizeBytes = requiredModels.reduce(
@@ -166,8 +174,12 @@ export function useModels() {
     setModelsStatus(fallbackStatus)
   }, [selectedEngine, setModelsStatus])
 
-  // Lifecycle status check on mount and whenever selectedEngine changes
+  // Lifecycle status check once per engine change across all mounted hook instances
   useEffect(() => {
+    if (lastCheckedEngine === selectedEngine && modelsStatus !== null) {
+      return
+    }
+    lastCheckedEngine = selectedEngine
     let mounted = true
 
     const initCheck = async () => {
@@ -183,32 +195,57 @@ export function useModels() {
     return () => {
       mounted = false
     }
-  }, [selectedEngine, refreshStatus, setIsChecking])
+  }, [selectedEngine, modelsStatus, refreshStatus, setIsChecking])
 
-  // Subscribe to live model download progress events
+  // Subscribe to live model download progress events (singleton subscription across hook instances)
   useEffect(() => {
-    const unsubscribe = onModelDownloadProgress((payload) => {
-      if (!payload || !payload.modelId) return
+    activeProgressListeners += 1
 
-      setDownloadingModels((prev) => {
-        if (payload.percentage >= 100) {
-          const next = { ...prev }
-          delete next[payload.modelId]
-          return next
+    if (!globalProgressUnsubscribe) {
+      globalProgressUnsubscribe = onModelDownloadProgress((payload) => {
+        if (!payload || !payload.modelId) return
+
+        if (payload.percentage >= 100 && payload.speed === 'Completed') {
+          // Refresh disk status FIRST before clearing downloadingModels[modelId]
+          // so allRequiredModelsReadyAtom never transitions prematurely.
+          refreshStatus().finally(() => {
+            setDownloadingModels((prev) => {
+              if (!prev[payload.modelId]) return prev
+              const next = { ...prev }
+              delete next[payload.modelId]
+              return next
+            })
+          })
+          return
         }
-        return {
-          ...prev,
-          [payload.modelId]: payload,
-        }
+
+        setDownloadingModels((prev) => {
+          const existing = prev[payload.modelId]
+          const monotonicPct = existing
+            ? Math.max(existing.percentage, payload.percentage)
+            : payload.percentage
+          const monotonicDownloaded = existing
+            ? Math.max(existing.downloaded, payload.downloaded)
+            : payload.downloaded
+
+          return {
+            ...prev,
+            [payload.modelId]: {
+              ...payload,
+              percentage: monotonicPct,
+              downloaded: monotonicDownloaded,
+            },
+          }
+        })
       })
-
-      if (payload.percentage >= 100) {
-        refreshStatus()
-      }
-    })
+    }
 
     return () => {
-      unsubscribe()
+      activeProgressListeners = Math.max(0, activeProgressListeners - 1)
+      if (activeProgressListeners === 0 && globalProgressUnsubscribe) {
+        globalProgressUnsubscribe()
+        globalProgressUnsubscribe = null
+      }
     }
   }, [refreshStatus, setDownloadingModels])
 
@@ -216,7 +253,7 @@ export function useModels() {
     async (modelId: string): Promise<boolean> => {
       setDownloadingModels((prev) => ({
         ...prev,
-        [modelId]: {
+        [modelId]: prev[modelId] || {
           modelId,
           percentage: 0,
           downloaded: 0,
@@ -233,13 +270,17 @@ export function useModels() {
           return true
         } else {
           console.error(`[modelsStore] Download failed for ${modelId}:`, res?.error)
+          if (res?.data) setModelsStatus(res.data as VoiceModelStatusResult)
+          else await refreshStatus()
           return false
         }
       } catch (err) {
         console.error(`[modelsStore] Download error for ${modelId}:`, err)
+        await refreshStatus()
         return false
       } finally {
         setDownloadingModels((prev) => {
+          if (!prev[modelId]) return prev
           const next = { ...prev }
           delete next[modelId]
           return next
@@ -251,14 +292,14 @@ export function useModels() {
 
   const downloadAllRequired = useCallback(async (): Promise<boolean> => {
     const needed = requiredModels.filter((m) => !m.downloaded)
-
-    for (const model of needed) {
-      const ok = await downloadModel(model.id)
-      if (!ok) return false
+    if (needed.length === 0) {
+      await refreshStatus()
+      return true
     }
 
+    const results = await Promise.all(needed.map((model) => downloadModel(model.id)))
     await refreshStatus()
-    return true
+    return results.every(Boolean)
   }, [requiredModels, downloadModel, refreshStatus])
 
   const cancelDownload = useCallback(

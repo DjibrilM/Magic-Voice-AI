@@ -302,11 +302,6 @@ export function Settings() {
                     {inferenceDevice === 'gpu' ? 'Metal (GPU)' : 'CPU Mode'}
                   </span>
                 </div>
-                <span className="text-xs text-[#8e8e93] pt-0.5 truncate">
-                  {inferenceDevice === 'gpu'
-                    ? 'Using Apple Silicon Metal GPU for real-time speech synthesis'
-                    : 'Using system CPU execution threads for synthesis'}
-                </span>
               </div>
             </div>
 
@@ -334,7 +329,7 @@ export function Settings() {
 
         {/* iOS Settings Group Caption / Footnote */}
         <p className="text-[11px] text-[#8e8e93] px-1 leading-relaxed">
-          Enable GPU Acceleration to run CosyVoice 3 on Apple Silicon Metal compute shaders for fastest real-time generation. Turn off to run inference on CPU cores.
+          Enable GPU Acceleration
         </p>
       </section>
 

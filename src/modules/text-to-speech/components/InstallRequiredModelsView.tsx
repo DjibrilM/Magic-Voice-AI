@@ -40,19 +40,19 @@ export const InstallRequiredModelsView: React.FC = () => {
           </div>
 
           <p className="text-sm text-muted-foreground">
-            Download the neural speech synthesis backbone, vocoder, and cloning models to run locally offline.
+            Download the speech synthesis backbone, vocoder, and cloning models to run locally offline.
           </p>
         </header>
 
         <div className="space-y-2">
           {activeEngineModels.map((model) => {
             const download = downloadingModels[model.id]
-            const isDownloading = !!download
+            const isDownloading = !!download || model.status === 'downloading'
             const progress = Math.max(
               0,
               Math.min(100, Math.round(download?.percentage ?? 0))
             )
-            const isReady = model.downloaded
+            const isReady = model.downloaded && !isDownloading
 
             return (
               <div
