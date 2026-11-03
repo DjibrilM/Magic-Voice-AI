@@ -1,0 +1,11 @@
+{
+  "language": "German",
+  "flag": "🇩🇪",
+  "code": "de",
+  "name": "German",
+  "nativeName": "Deutsch",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/de/json/voices.json",
+  "count": 10
+}

@@ -1,0 +1,11 @@
+{
+  "language": "French",
+  "flag": "🇫🇷",
+  "code": "fr",
+  "name": "French",
+  "nativeName": "Français",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/fr/json/voices.json",
+  "count": 10
+}

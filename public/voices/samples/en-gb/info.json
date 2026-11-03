@@ -1,0 +1,11 @@
+{
+  "language": "English (UK)",
+  "flag": "🇬🇧",
+  "code": "en-gb",
+  "name": "English (UK)",
+  "nativeName": "English (United Kingdom)",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/en-gb/json/voices.json",
+  "count": 10
+}

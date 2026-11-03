@@ -1,0 +1,11 @@
+{
+  "language": "Russian",
+  "flag": "🇷🇺",
+  "code": "ru",
+  "name": "Russian",
+  "nativeName": "Русский",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/ru/json/voices.json",
+  "count": 10
+}

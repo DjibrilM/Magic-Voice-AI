@@ -1,0 +1,19 @@
+model CustomVoice {
+  id                 String   @id
+  name               String
+  description        String   @default("")
+  category           String   @default("cloned")
+  color              String   @default("#38bdf8")
+  avatarUrl          String   @default("/voices/sterling.jpg")
+  initials           String   @default("CV")
+  gender             String   @default("Neutral")
+  tags               String   @default("[]") // JSON string of string[]
+  referenceAudioName String?
+  sampleUrl          String?
+  languageCode       String?
+  languageName       String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("custom_voices")
+}

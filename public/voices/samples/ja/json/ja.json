@@ -1,0 +1,370 @@
+[
+  {
+    "id": "voice-ja-male-1",
+    "audio": "voice_ja_male_1.mp3",
+    "image": "/voices/sterling.jpg",
+    "color": "#38bdf8",
+    "info": {
+      "id": "voice-ja-male-1",
+      "name": "George (Japanese)",
+      "description": "Warm resonance that instantly captivates listeners.",
+      "category": "preset",
+      "initials": "GE",
+      "gender": "Male",
+      "languageCode": "ja",
+      "languageName": "Japanese",
+      "tags": [
+        "Japanese",
+        "Male",
+        "Narrative story",
+        "Mature"
+      ]
+    },
+    "name": "George (Japanese)",
+    "description": "Warm resonance that instantly captivates listeners.",
+    "category": "preset",
+    "avatarUrl": "/voices/sterling.jpg",
+    "sampleUrl": "/voices/samples/ja/voice_ja_male_1.mp3",
+    "initials": "GE",
+    "gender": "Male",
+    "languageCode": "ja",
+    "languageName": "Japanese",
+    "tags": [
+      "Japanese",
+      "Male",
+      "Narrative story",
+      "Mature"
+    ]
+  },
+  {
+    "id": "voice-ja-male-2",
+    "audio": "voice_ja_male_2.mp3",
+    "image": "/voices/jax.jpg",
+    "color": "#f59e0b",
+    "info": {
+      "id": "voice-ja-male-2",
+      "name": "Roger (Japanese)",
+      "description": "Easy going and perfect for casual conversations.",
+      "category": "preset",
+      "initials": "RO",
+      "gender": "Male",
+      "languageCode": "ja",
+      "languageName": "Japanese",
+      "tags": [
+        "Japanese",
+        "Male",
+        "Conversational",
+        "Classy"
+      ]
+    },
+    "name": "Roger (Japanese)",
+    "description": "Easy going and perfect for casual conversations.",
+    "category": "preset",
+    "avatarUrl": "/voices/jax.jpg",
+    "sampleUrl": "/voices/samples/ja/voice_ja_male_2.mp3",
+    "initials": "RO",
+    "gender": "Male",
+    "languageCode": "ja",
+    "languageName": "Japanese",
+    "tags": [
+      "Japanese",
+      "Male",
+      "Conversational",
+      "Classy"
+    ]
+  },
+  {
+    "id": "voice-ja-male-3",
+    "audio": "voice_ja_male_3.mp3",
+    "image": "/voices/alistair.jpg",
+    "color": "#d97706",
+    "info": {
+      "id": "voice-ja-male-3",
+      "name": "Charlie (Japanese)",
+      "description": "A young Australian male with a confident and energetic voice.",
+      "category": "preset",
+      "initials": "CH",
+      "gender": "Male",
+      "languageCode": "ja",
+      "languageName": "Japanese",
+      "tags": [
+        "Japanese",
+        "Male",
+        "Conversational",
+        "Hyped"
+      ]
+    },
+    "name": "Charlie (Japanese)",
+    "description": "A young Australian male with a confident and energetic voice.",
+    "category": "preset",
+    "avatarUrl": "/voices/alistair.jpg",
+    "sampleUrl": "/voices/samples/ja/voice_ja_male_3.mp3",
+    "initials": "CH",
+    "gender": "Male",
+    "languageCode": "ja",
+    "languageName": "Japanese",
+    "tags": [
+      "Japanese",
+      "Male",
+      "Conversational",
+      "Hyped"
+    ]
+  },
+  {
+    "id": "voice-ja-male-4",
+    "audio": "voice_ja_male_4.mp3",
+    "image": "/voices/george.jpg",
+    "color": "#10b981",
+    "info": {
+      "id": "voice-ja-male-4",
+      "name": "Callum (Japanese)",
+      "description": "Deceptively gravelly, yet unsettling edge.",
+      "category": "preset",
+      "initials": "CA",
+      "gender": "Male",
+      "languageCode": "ja",
+      "languageName": "Japanese",
+      "tags": [
+        "Japanese",
+        "Male",
+        "Characters animation"
+      ]
+    },
+    "name": "Callum (Japanese)",
+    "description": "Deceptively gravelly, yet unsettling edge.",
+    "category": "preset",
+    "avatarUrl": "/voices/george.jpg",
+    "sampleUrl": "/voices/samples/ja/voice_ja_male_4.mp3",
+    "initials": "CA",
+    "gender": "Male",
+    "languageCode": "ja",
+    "languageName": "Japanese",
+    "tags": [
+      "Japanese",
+      "Male",
+      "Characters animation"
+    ]
+  },
+  {
+    "id": "voice-ja-male-5",
+    "audio": "voice_ja_male_5.mp3",
+    "image": "/voices/roger.jpg",
+    "color": "#a855f7",
+    "info": {
+      "id": "voice-ja-male-5",
+      "name": "Harry (Japanese)",
+      "description": "An animated warrior ready to charge forward.",
+      "category": "preset",
+      "initials": "HA",
+      "gender": "Male",
+      "languageCode": "ja",
+      "languageName": "Japanese",
+      "tags": [
+        "Japanese",
+        "Male",
+        "Characters animation",
+        "Rough"
+      ]
+    },
+    "name": "Harry (Japanese)",
+    "description": "An animated warrior ready to charge forward.",
+    "category": "preset",
+    "avatarUrl": "/voices/roger.jpg",
+    "sampleUrl": "/voices/samples/ja/voice_ja_male_5.mp3",
+    "initials": "HA",
+    "gender": "Male",
+    "languageCode": "ja",
+    "languageName": "Japanese",
+    "tags": [
+      "Japanese",
+      "Male",
+      "Characters animation",
+      "Rough"
+    ]
+  },
+  {
+    "id": "voice-ja-female-1",
+    "audio": "voice_ja_female_1.mp3",
+    "image": "/voices/serena.jpg",
+    "color": "#ec4899",
+    "info": {
+      "id": "voice-ja-female-1",
+      "name": "Alice (Japanese)",
+      "description": "Clear and engaging, friendly woman with a British accent suitable for e-learning.",
+      "category": "preset",
+      "initials": "AL",
+      "gender": "Female",
+      "languageCode": "ja",
+      "languageName": "Japanese",
+      "tags": [
+        "Japanese",
+        "Female",
+        "Informative educational",
+        "Professional"
+      ]
+    },
+    "name": "Alice (Japanese)",
+    "description": "Clear and engaging, friendly woman with a British accent suitable for e-learning.",
+    "category": "preset",
+    "avatarUrl": "/voices/serena.jpg",
+    "sampleUrl": "/voices/samples/ja/voice_ja_female_1.mp3",
+    "initials": "AL",
+    "gender": "Female",
+    "languageCode": "ja",
+    "languageName": "Japanese",
+    "tags": [
+      "Japanese",
+      "Female",
+      "Informative educational",
+      "Professional"
+    ]
+  },
+  {
+    "id": "voice-ja-female-2",
+    "audio": "voice_ja_female_2.mp3",
+    "image": "/voices/chloe.jpg",
+    "color": "#06b6d4",
+    "info": {
+      "id": "voice-ja-female-2",
+      "name": "Jessica (Japanese)",
+      "description": "Young and popular, this playful American female voice is perfect for trendy content.",
+      "category": "preset",
+      "initials": "JE",
+      "gender": "Female",
+      "languageCode": "ja",
+      "languageName": "Japanese",
+      "tags": [
+        "Japanese",
+        "Female",
+        "Conversational",
+        "Cute"
+      ]
+    },
+    "name": "Jessica (Japanese)",
+    "description": "Young and popular, this playful American female voice is perfect for trendy content.",
+    "category": "preset",
+    "avatarUrl": "/voices/chloe.jpg",
+    "sampleUrl": "/voices/samples/ja/voice_ja_female_2.mp3",
+    "initials": "JE",
+    "gender": "Female",
+    "languageCode": "ja",
+    "languageName": "Japanese",
+    "tags": [
+      "Japanese",
+      "Female",
+      "Conversational",
+      "Cute"
+    ]
+  },
+  {
+    "id": "voice-ja-female-3",
+    "audio": "voice_ja_female_3.mp3",
+    "image": "/voices/sarah.jpg",
+    "color": "#8b5cf6",
+    "info": {
+      "id": "voice-ja-female-3",
+      "name": "Bella (Japanese)",
+      "description": "This voice is warm, bright, and professional, characterized by a Standard American accent and a polished, narrative quality. It features a medium-high pitch with crisp diction and a deliberate, rhythmic pace that makes it highly intelligible and engaging for long-form listening.",
+      "category": "preset",
+      "initials": "BE",
+      "gender": "Female",
+      "languageCode": "ja",
+      "languageName": "Japanese",
+      "tags": [
+        "Japanese",
+        "Female",
+        "Informative educational",
+        "Professional"
+      ]
+    },
+    "name": "Bella (Japanese)",
+    "description": "This voice is warm, bright, and professional, characterized by a Standard American accent and a polished, narrative quality. It features a medium-high pitch with crisp diction and a deliberate, rhythmic pace that makes it highly intelligible and engaging for long-form listening.",
+    "category": "preset",
+    "avatarUrl": "/voices/sarah.jpg",
+    "sampleUrl": "/voices/samples/ja/voice_ja_female_3.mp3",
+    "initials": "BE",
+    "gender": "Female",
+    "languageCode": "ja",
+    "languageName": "Japanese",
+    "tags": [
+      "Japanese",
+      "Female",
+      "Informative educational",
+      "Professional"
+    ]
+  },
+  {
+    "id": "voice-ja-female-4",
+    "audio": "voice_ja_female_4.mp3",
+    "image": "/voices/jessica.jpg",
+    "color": "#ef4444",
+    "info": {
+      "id": "voice-ja-female-4",
+      "name": "Sarah (Japanese)",
+      "description": "Young adult woman with a confident and warm, mature quality and a reassuring, professional tone.",
+      "category": "preset",
+      "initials": "SA",
+      "gender": "Female",
+      "languageCode": "ja",
+      "languageName": "Japanese",
+      "tags": [
+        "Japanese",
+        "Female",
+        "Entertainment tv",
+        "Professional"
+      ]
+    },
+    "name": "Sarah (Japanese)",
+    "description": "Young adult woman with a confident and warm, mature quality and a reassuring, professional tone.",
+    "category": "preset",
+    "avatarUrl": "/voices/jessica.jpg",
+    "sampleUrl": "/voices/samples/ja/voice_ja_female_4.mp3",
+    "initials": "SA",
+    "gender": "Female",
+    "languageCode": "ja",
+    "languageName": "Japanese",
+    "tags": [
+      "Japanese",
+      "Female",
+      "Entertainment tv",
+      "Professional"
+    ]
+  },
+  {
+    "id": "voice-ja-female-5",
+    "audio": "voice_ja_female_5.mp3",
+    "image": "/voices/eleanor.jpg",
+    "color": "#3b82f6",
+    "info": {
+      "id": "voice-ja-female-5",
+      "name": "Laura (Japanese)",
+      "description": "This young adult female voice delivers sunny enthusiasm with a quirky attitude.",
+      "category": "preset",
+      "initials": "LA",
+      "gender": "Female",
+      "languageCode": "ja",
+      "languageName": "Japanese",
+      "tags": [
+        "Japanese",
+        "Female",
+        "Social media",
+        "Sassy"
+      ]
+    },
+    "name": "Laura (Japanese)",
+    "description": "This young adult female voice delivers sunny enthusiasm with a quirky attitude.",
+    "category": "preset",
+    "avatarUrl": "/voices/eleanor.jpg",
+    "sampleUrl": "/voices/samples/ja/voice_ja_female_5.mp3",
+    "initials": "LA",
+    "gender": "Female",
+    "languageCode": "ja",
+    "languageName": "Japanese",
+    "tags": [
+      "Japanese",
+      "Female",
+      "Social media",
+      "Sassy"
+    ]
+  }
+]

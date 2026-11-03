@@ -1,0 +1,392 @@
+[
+  {
+    "id": "voice-en-af-male-1",
+    "audio": "voice_en-af_male_1.mp3",
+    "image": "/voices/sterling.jpg",
+    "color": "#38bdf8",
+    "info": {
+      "id": "voice-en-af-male-1",
+      "name": "Sizwe (English (Africa))",
+      "description": "Authentic South African male voice with natural delivery, ideal for product explanations and narration.",
+      "category": "preset",
+      "initials": "SI",
+      "gender": "Male",
+      "languageCode": "en-af",
+      "languageName": "English (Africa)",
+      "tags": [
+        "English (Africa)",
+        "Male",
+        "South African",
+        "Narrative",
+        "Clear"
+      ]
+    },
+    "name": "Sizwe (English (Africa))",
+    "description": "Authentic South African male voice with natural delivery, ideal for product explanations and narration.",
+    "category": "preset",
+    "avatarUrl": "/voices/sterling.jpg",
+    "sampleUrl": "/voices/samples/en-af/voice_en-af_male_1.mp3",
+    "initials": "SI",
+    "gender": "Male",
+    "languageCode": "en-af",
+    "languageName": "English (Africa)",
+    "tags": [
+      "English (Africa)",
+      "Male",
+      "South African",
+      "Narrative",
+      "Clear"
+    ]
+  },
+  {
+    "id": "voice-en-af-male-2",
+    "audio": "voice_en-af_male_2.mp3",
+    "image": "/voices/jax.jpg",
+    "color": "#ec4899",
+    "info": {
+      "id": "voice-en-af-male-2",
+      "name": "Sebotsa (English (Africa))",
+      "description": "A warm, clear South African male voice with a natural, friendly storytelling cadence.",
+      "category": "preset",
+      "initials": "SE",
+      "gender": "Male",
+      "languageCode": "en-af",
+      "languageName": "English (Africa)",
+      "tags": [
+        "English (Africa)",
+        "Male",
+        "South African",
+        "Warm",
+        "Conversational"
+      ]
+    },
+    "name": "Sebotsa (English (Africa))",
+    "description": "A warm, clear South African male voice with a natural, friendly storytelling cadence.",
+    "category": "preset",
+    "avatarUrl": "/voices/jax.jpg",
+    "sampleUrl": "/voices/samples/en-af/voice_en-af_male_2.mp3",
+    "initials": "SE",
+    "gender": "Male",
+    "languageCode": "en-af",
+    "languageName": "English (Africa)",
+    "tags": [
+      "English (Africa)",
+      "Male",
+      "South African",
+      "Warm",
+      "Conversational"
+    ]
+  },
+  {
+    "id": "voice-en-af-male-3",
+    "audio": "voice_en-af_male_3.mp3",
+    "image": "/voices/alistair.jpg",
+    "color": "#f59e0b",
+    "info": {
+      "id": "voice-en-af-male-3",
+      "name": "Ola (English (Africa))",
+      "description": "A warm, calm, and balanced Nigerian English voice with smooth articulation.",
+      "category": "preset",
+      "initials": "OL",
+      "gender": "Male",
+      "languageCode": "en-af",
+      "languageName": "English (Africa)",
+      "tags": [
+        "English (Africa)",
+        "Male",
+        "Nigerian",
+        "Calm",
+        "Balanced"
+      ]
+    },
+    "name": "Ola (English (Africa))",
+    "description": "A warm, calm, and balanced Nigerian English voice with smooth articulation.",
+    "category": "preset",
+    "avatarUrl": "/voices/alistair.jpg",
+    "sampleUrl": "/voices/samples/en-af/voice_en-af_male_3.mp3",
+    "initials": "OL",
+    "gender": "Male",
+    "languageCode": "en-af",
+    "languageName": "English (Africa)",
+    "tags": [
+      "English (Africa)",
+      "Male",
+      "Nigerian",
+      "Calm",
+      "Balanced"
+    ]
+  },
+  {
+    "id": "voice-en-af-male-4",
+    "audio": "voice_en-af_male_4.mp3",
+    "image": "/voices/george.jpg",
+    "color": "#06b6d4",
+    "info": {
+      "id": "voice-en-af-male-4",
+      "name": "Kasalu (English (Africa))",
+      "description": "Low voice, authoritative, relaxed, documentary and lore style.",
+      "category": "preset",
+      "initials": "KA",
+      "gender": "Male",
+      "languageCode": "en-af",
+      "languageName": "English (Africa)",
+      "tags": [
+        "English (Africa)",
+        "Male",
+        "African",
+        "Authoritative",
+        "Deep"
+      ]
+    },
+    "name": "Kasalu (English (Africa))",
+    "description": "Low voice, authoritative, relaxed, documentary and lore style.",
+    "category": "preset",
+    "avatarUrl": "/voices/george.jpg",
+    "sampleUrl": "/voices/samples/en-af/voice_en-af_male_4.mp3",
+    "initials": "KA",
+    "gender": "Male",
+    "languageCode": "en-af",
+    "languageName": "English (Africa)",
+    "tags": [
+      "English (Africa)",
+      "Male",
+      "African",
+      "Authoritative",
+      "Deep"
+    ]
+  },
+  {
+    "id": "voice-en-af-male-5",
+    "audio": "voice_en-af_male_5.mp3",
+    "image": "/voices/roger.jpg",
+    "color": "#d97706",
+    "info": {
+      "id": "voice-en-af-male-5",
+      "name": "Matthew (English (Africa))",
+      "description": "Deep South African, Zulu-influenced accent, commanding and regal male tone.",
+      "category": "preset",
+      "initials": "MA",
+      "gender": "Male",
+      "languageCode": "en-af",
+      "languageName": "English (Africa)",
+      "tags": [
+        "English (Africa)",
+        "Male",
+        "South African",
+        "Regal",
+        "Documentary"
+      ]
+    },
+    "name": "Matthew (English (Africa))",
+    "description": "Deep South African, Zulu-influenced accent, commanding and regal male tone.",
+    "category": "preset",
+    "avatarUrl": "/voices/roger.jpg",
+    "sampleUrl": "/voices/samples/en-af/voice_en-af_male_5.mp3",
+    "initials": "MA",
+    "gender": "Male",
+    "languageCode": "en-af",
+    "languageName": "English (Africa)",
+    "tags": [
+      "English (Africa)",
+      "Male",
+      "South African",
+      "Regal",
+      "Documentary"
+    ]
+  },
+  {
+    "id": "voice-en-af-female-1",
+    "audio": "voice_en-af_female_1.mp3",
+    "image": "/voices/serena.jpg",
+    "color": "#ec4899",
+    "info": {
+      "id": "voice-en-af-female-1",
+      "name": "Annabel (English (Africa))",
+      "description": "Articulate and warm South African female voice, clear and engaging.",
+      "category": "preset",
+      "initials": "AN",
+      "gender": "Female",
+      "languageCode": "en-af",
+      "languageName": "English (Africa)",
+      "tags": [
+        "English (Africa)",
+        "Female",
+        "South African",
+        "Clear",
+        "Conversational"
+      ]
+    },
+    "name": "Annabel (English (Africa))",
+    "description": "Articulate and warm South African female voice, clear and engaging.",
+    "category": "preset",
+    "avatarUrl": "/voices/serena.jpg",
+    "sampleUrl": "/voices/samples/en-af/voice_en-af_female_1.mp3",
+    "initials": "AN",
+    "gender": "Female",
+    "languageCode": "en-af",
+    "languageName": "English (Africa)",
+    "tags": [
+      "English (Africa)",
+      "Female",
+      "South African",
+      "Clear",
+      "Conversational"
+    ]
+  },
+  {
+    "id": "voice-en-af-female-2",
+    "audio": "voice_en-af_female_2.mp3",
+    "image": "/voices/chloe.jpg",
+    "color": "#06b6d4",
+    "info": {
+      "id": "voice-en-af-female-2",
+      "name": "Bolanle (English (Africa))",
+      "description": "A warm, expressive, and versatile African-rooted female voice designed for natural storytelling.",
+      "category": "preset",
+      "initials": "BO",
+      "gender": "Female",
+      "languageCode": "en-af",
+      "languageName": "English (Africa)",
+      "tags": [
+        "English (Africa)",
+        "Female",
+        "African Root",
+        "Storytelling",
+        "Warm"
+      ]
+    },
+    "name": "Bolanle (English (Africa))",
+    "description": "A warm, expressive, and versatile African-rooted female voice designed for natural storytelling.",
+    "category": "preset",
+    "avatarUrl": "/voices/chloe.jpg",
+    "sampleUrl": "/voices/samples/en-af/voice_en-af_female_2.mp3",
+    "initials": "BO",
+    "gender": "Female",
+    "languageCode": "en-af",
+    "languageName": "English (Africa)",
+    "tags": [
+      "English (Africa)",
+      "Female",
+      "African Root",
+      "Storytelling",
+      "Warm"
+    ]
+  },
+  {
+    "id": "voice-en-af-female-3",
+    "audio": "voice_en-af_female_3.mp3",
+    "image": "/voices/sarah.jpg",
+    "color": "#8b5cf6",
+    "info": {
+      "id": "voice-en-af-female-3",
+      "name": "Dolamade (English (Africa))",
+      "description": "Clear, steady, and calm Nigerian English female voice for explainers and corporate narration.",
+      "category": "preset",
+      "initials": "DO",
+      "gender": "Female",
+      "languageCode": "en-af",
+      "languageName": "English (Africa)",
+      "tags": [
+        "English (Africa)",
+        "Female",
+        "Nigerian",
+        "Calm",
+        "Professional"
+      ]
+    },
+    "name": "Dolamade (English (Africa))",
+    "description": "Clear, steady, and calm Nigerian English female voice for explainers and corporate narration.",
+    "category": "preset",
+    "avatarUrl": "/voices/sarah.jpg",
+    "sampleUrl": "/voices/samples/en-af/voice_en-af_female_3.mp3",
+    "initials": "DO",
+    "gender": "Female",
+    "languageCode": "en-af",
+    "languageName": "English (Africa)",
+    "tags": [
+      "English (Africa)",
+      "Female",
+      "Nigerian",
+      "Calm",
+      "Professional"
+    ]
+  },
+  {
+    "id": "voice-en-af-female-4",
+    "audio": "voice_en-af_female_4.mp3",
+    "image": "/voices/jessica.jpg",
+    "color": "#ef4444",
+    "info": {
+      "id": "voice-en-af-female-4",
+      "name": "Amara (English (Africa))",
+      "description": "Warm African-British professional female voice with smooth and reassuring cadence.",
+      "category": "preset",
+      "initials": "AM",
+      "gender": "Female",
+      "languageCode": "en-af",
+      "languageName": "English (Africa)",
+      "tags": [
+        "English (Africa)",
+        "Female",
+        "African",
+        "Professional",
+        "Warm"
+      ]
+    },
+    "name": "Amara (English (Africa))",
+    "description": "Warm African-British professional female voice with smooth and reassuring cadence.",
+    "category": "preset",
+    "avatarUrl": "/voices/jessica.jpg",
+    "sampleUrl": "/voices/samples/en-af/voice_en-af_female_4.mp3",
+    "initials": "AM",
+    "gender": "Female",
+    "languageCode": "en-af",
+    "languageName": "English (Africa)",
+    "tags": [
+      "English (Africa)",
+      "Female",
+      "African",
+      "Professional",
+      "Warm"
+    ]
+  },
+  {
+    "id": "voice-en-af-female-5",
+    "audio": "voice_en-af_female_5.mp3",
+    "image": "/voices/eleanor.jpg",
+    "color": "#3b82f6",
+    "info": {
+      "id": "voice-en-af-female-5",
+      "name": "Linet (English (Africa))",
+      "description": "Friendly, bright, and authentic East African voice with pleasant conversational tone.",
+      "category": "preset",
+      "initials": "LI",
+      "gender": "Female",
+      "languageCode": "en-af",
+      "languageName": "English (Africa)",
+      "tags": [
+        "English (Africa)",
+        "Female",
+        "African",
+        "Friendly",
+        "Bright"
+      ]
+    },
+    "name": "Linet (English (Africa))",
+    "description": "Friendly, bright, and authentic East African voice with pleasant conversational tone.",
+    "category": "preset",
+    "avatarUrl": "/voices/eleanor.jpg",
+    "sampleUrl": "/voices/samples/en-af/voice_en-af_female_5.mp3",
+    "initials": "LI",
+    "gender": "Female",
+    "languageCode": "en-af",
+    "languageName": "English (Africa)",
+    "tags": [
+      "English (Africa)",
+      "Female",
+      "African",
+      "Friendly",
+      "Bright"
+    ]
+  }
+]

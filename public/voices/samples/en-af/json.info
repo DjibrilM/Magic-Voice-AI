@@ -1,0 +1,11 @@
+{
+  "language": "English (Africa)",
+  "flag": "🌍",
+  "code": "en-af",
+  "name": "English (Africa)",
+  "nativeName": "English (Africa)",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/en-af/json/voices.json",
+  "count": 10
+}

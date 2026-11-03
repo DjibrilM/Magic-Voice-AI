@@ -1,0 +1,19 @@
+model Activity {
+  id              String        @id
+  type            String        // Activity type (e.g. "tts", "audio", "music", "stories")
+  title           String        @unique // Unique title
+  description     String?
+  category        String?       @default("Text to Speech")
+  subCategory     String?
+  originId        String?
+  originType      String?       // "conversation", etc.
+  metadata        String?       // JSON string for additional attributes
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // One-to-one relation with Conversation (TTS origin)
+  conversationId  String?       @unique
+  conversation    Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("activities")
+}

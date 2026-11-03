@@ -1,0 +1,11 @@
+{
+  "language": "Arabic",
+  "flag": "🇸🇦",
+  "code": "ar",
+  "name": "Arabic",
+  "nativeName": "العربية",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/ar/json/voices.json",
+  "count": 10
+}

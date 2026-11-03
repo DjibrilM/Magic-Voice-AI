@@ -1,0 +1,11 @@
+{
+  "language": "English (US)",
+  "flag": "🇺🇸",
+  "code": "en",
+  "name": "English (US)",
+  "nativeName": "English (United States)",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/en/json/voices.json",
+  "count": 10
+}

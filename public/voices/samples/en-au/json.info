@@ -1,0 +1,11 @@
+{
+  "language": "English (Australia)",
+  "flag": "🇦🇺",
+  "code": "en-au",
+  "name": "English (Australia)",
+  "nativeName": "English (Australia)",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/en-au/json/voices.json",
+  "count": 10
+}

@@ -1,0 +1,370 @@
+[
+  {
+    "id": "voice-it-male-1",
+    "audio": "voice_it_male_1.mp3",
+    "image": "/voices/sterling.jpg",
+    "color": "#38bdf8",
+    "info": {
+      "id": "voice-it-male-1",
+      "name": "Roger (Italian)",
+      "description": "Easy going and perfect for casual conversations.",
+      "category": "preset",
+      "initials": "RO",
+      "gender": "Male",
+      "languageCode": "it",
+      "languageName": "Italian",
+      "tags": [
+        "Italian",
+        "Male",
+        "Conversational",
+        "Classy"
+      ]
+    },
+    "name": "Roger (Italian)",
+    "description": "Easy going and perfect for casual conversations.",
+    "category": "preset",
+    "avatarUrl": "/voices/sterling.jpg",
+    "sampleUrl": "/voices/samples/it/voice_it_male_1.mp3",
+    "initials": "RO",
+    "gender": "Male",
+    "languageCode": "it",
+    "languageName": "Italian",
+    "tags": [
+      "Italian",
+      "Male",
+      "Conversational",
+      "Classy"
+    ]
+  },
+  {
+    "id": "voice-it-male-2",
+    "audio": "voice_it_male_2.mp3",
+    "image": "/voices/jax.jpg",
+    "color": "#f59e0b",
+    "info": {
+      "id": "voice-it-male-2",
+      "name": "Charlie (Italian)",
+      "description": "A young Australian male with a confident and energetic voice.",
+      "category": "preset",
+      "initials": "CH",
+      "gender": "Male",
+      "languageCode": "it",
+      "languageName": "Italian",
+      "tags": [
+        "Italian",
+        "Male",
+        "Conversational",
+        "Hyped"
+      ]
+    },
+    "name": "Charlie (Italian)",
+    "description": "A young Australian male with a confident and energetic voice.",
+    "category": "preset",
+    "avatarUrl": "/voices/jax.jpg",
+    "sampleUrl": "/voices/samples/it/voice_it_male_2.mp3",
+    "initials": "CH",
+    "gender": "Male",
+    "languageCode": "it",
+    "languageName": "Italian",
+    "tags": [
+      "Italian",
+      "Male",
+      "Conversational",
+      "Hyped"
+    ]
+  },
+  {
+    "id": "voice-it-male-3",
+    "audio": "voice_it_male_3.mp3",
+    "image": "/voices/alistair.jpg",
+    "color": "#d97706",
+    "info": {
+      "id": "voice-it-male-3",
+      "name": "George (Italian)",
+      "description": "Warm resonance that instantly captivates listeners.",
+      "category": "preset",
+      "initials": "GE",
+      "gender": "Male",
+      "languageCode": "it",
+      "languageName": "Italian",
+      "tags": [
+        "Italian",
+        "Male",
+        "Narrative story",
+        "Mature"
+      ]
+    },
+    "name": "George (Italian)",
+    "description": "Warm resonance that instantly captivates listeners.",
+    "category": "preset",
+    "avatarUrl": "/voices/alistair.jpg",
+    "sampleUrl": "/voices/samples/it/voice_it_male_3.mp3",
+    "initials": "GE",
+    "gender": "Male",
+    "languageCode": "it",
+    "languageName": "Italian",
+    "tags": [
+      "Italian",
+      "Male",
+      "Narrative story",
+      "Mature"
+    ]
+  },
+  {
+    "id": "voice-it-male-4",
+    "audio": "voice_it_male_4.mp3",
+    "image": "/voices/george.jpg",
+    "color": "#10b981",
+    "info": {
+      "id": "voice-it-male-4",
+      "name": "Callum (Italian)",
+      "description": "Deceptively gravelly, yet unsettling edge.",
+      "category": "preset",
+      "initials": "CA",
+      "gender": "Male",
+      "languageCode": "it",
+      "languageName": "Italian",
+      "tags": [
+        "Italian",
+        "Male",
+        "Characters animation"
+      ]
+    },
+    "name": "Callum (Italian)",
+    "description": "Deceptively gravelly, yet unsettling edge.",
+    "category": "preset",
+    "avatarUrl": "/voices/george.jpg",
+    "sampleUrl": "/voices/samples/it/voice_it_male_4.mp3",
+    "initials": "CA",
+    "gender": "Male",
+    "languageCode": "it",
+    "languageName": "Italian",
+    "tags": [
+      "Italian",
+      "Male",
+      "Characters animation"
+    ]
+  },
+  {
+    "id": "voice-it-male-5",
+    "audio": "voice_it_male_5.mp3",
+    "image": "/voices/roger.jpg",
+    "color": "#a855f7",
+    "info": {
+      "id": "voice-it-male-5",
+      "name": "Harry (Italian)",
+      "description": "An animated warrior ready to charge forward.",
+      "category": "preset",
+      "initials": "HA",
+      "gender": "Male",
+      "languageCode": "it",
+      "languageName": "Italian",
+      "tags": [
+        "Italian",
+        "Male",
+        "Characters animation",
+        "Rough"
+      ]
+    },
+    "name": "Harry (Italian)",
+    "description": "An animated warrior ready to charge forward.",
+    "category": "preset",
+    "avatarUrl": "/voices/roger.jpg",
+    "sampleUrl": "/voices/samples/it/voice_it_male_5.mp3",
+    "initials": "HA",
+    "gender": "Male",
+    "languageCode": "it",
+    "languageName": "Italian",
+    "tags": [
+      "Italian",
+      "Male",
+      "Characters animation",
+      "Rough"
+    ]
+  },
+  {
+    "id": "voice-it-female-1",
+    "audio": "voice_it_female_1.mp3",
+    "image": "/voices/serena.jpg",
+    "color": "#ec4899",
+    "info": {
+      "id": "voice-it-female-1",
+      "name": "Alice (Italian)",
+      "description": "Clear and engaging, friendly woman with a British accent suitable for e-learning.",
+      "category": "preset",
+      "initials": "AL",
+      "gender": "Female",
+      "languageCode": "it",
+      "languageName": "Italian",
+      "tags": [
+        "Italian",
+        "Female",
+        "Informative educational",
+        "Professional"
+      ]
+    },
+    "name": "Alice (Italian)",
+    "description": "Clear and engaging, friendly woman with a British accent suitable for e-learning.",
+    "category": "preset",
+    "avatarUrl": "/voices/serena.jpg",
+    "sampleUrl": "/voices/samples/it/voice_it_female_1.mp3",
+    "initials": "AL",
+    "gender": "Female",
+    "languageCode": "it",
+    "languageName": "Italian",
+    "tags": [
+      "Italian",
+      "Female",
+      "Informative educational",
+      "Professional"
+    ]
+  },
+  {
+    "id": "voice-it-female-2",
+    "audio": "voice_it_female_2.mp3",
+    "image": "/voices/chloe.jpg",
+    "color": "#06b6d4",
+    "info": {
+      "id": "voice-it-female-2",
+      "name": "Matilda (Italian)",
+      "description": "A professional woman with a pleasing alto pitch. Suitable for many use cases.",
+      "category": "preset",
+      "initials": "MA",
+      "gender": "Female",
+      "languageCode": "it",
+      "languageName": "Italian",
+      "tags": [
+        "Italian",
+        "Female",
+        "Informative educational",
+        "Upbeat"
+      ]
+    },
+    "name": "Matilda (Italian)",
+    "description": "A professional woman with a pleasing alto pitch. Suitable for many use cases.",
+    "category": "preset",
+    "avatarUrl": "/voices/chloe.jpg",
+    "sampleUrl": "/voices/samples/it/voice_it_female_2.mp3",
+    "initials": "MA",
+    "gender": "Female",
+    "languageCode": "it",
+    "languageName": "Italian",
+    "tags": [
+      "Italian",
+      "Female",
+      "Informative educational",
+      "Upbeat"
+    ]
+  },
+  {
+    "id": "voice-it-female-3",
+    "audio": "voice_it_female_3.mp3",
+    "image": "/voices/sarah.jpg",
+    "color": "#8b5cf6",
+    "info": {
+      "id": "voice-it-female-3",
+      "name": "Lily (Italian)",
+      "description": "Velvety British female voice delivers news and narrations with warmth and clarity.",
+      "category": "preset",
+      "initials": "LI",
+      "gender": "Female",
+      "languageCode": "it",
+      "languageName": "Italian",
+      "tags": [
+        "Italian",
+        "Female",
+        "Informative educational",
+        "Confident"
+      ]
+    },
+    "name": "Lily (Italian)",
+    "description": "Velvety British female voice delivers news and narrations with warmth and clarity.",
+    "category": "preset",
+    "avatarUrl": "/voices/sarah.jpg",
+    "sampleUrl": "/voices/samples/it/voice_it_female_3.mp3",
+    "initials": "LI",
+    "gender": "Female",
+    "languageCode": "it",
+    "languageName": "Italian",
+    "tags": [
+      "Italian",
+      "Female",
+      "Informative educational",
+      "Confident"
+    ]
+  },
+  {
+    "id": "voice-it-female-4",
+    "audio": "voice_it_female_4.mp3",
+    "image": "/voices/jessica.jpg",
+    "color": "#ef4444",
+    "info": {
+      "id": "voice-it-female-4",
+      "name": "Bella (Italian)",
+      "description": "This voice is warm, bright, and professional, characterized by a Standard American accent and a polished, narrative quality. It features a medium-high pitch with crisp diction and a deliberate, rhythmic pace that makes it highly intelligible and engaging for long-form listening.",
+      "category": "preset",
+      "initials": "BE",
+      "gender": "Female",
+      "languageCode": "it",
+      "languageName": "Italian",
+      "tags": [
+        "Italian",
+        "Female",
+        "Informative educational",
+        "Professional"
+      ]
+    },
+    "name": "Bella (Italian)",
+    "description": "This voice is warm, bright, and professional, characterized by a Standard American accent and a polished, narrative quality. It features a medium-high pitch with crisp diction and a deliberate, rhythmic pace that makes it highly intelligible and engaging for long-form listening.",
+    "category": "preset",
+    "avatarUrl": "/voices/jessica.jpg",
+    "sampleUrl": "/voices/samples/it/voice_it_female_4.mp3",
+    "initials": "BE",
+    "gender": "Female",
+    "languageCode": "it",
+    "languageName": "Italian",
+    "tags": [
+      "Italian",
+      "Female",
+      "Informative educational",
+      "Professional"
+    ]
+  },
+  {
+    "id": "voice-it-female-5",
+    "audio": "voice_it_female_5.mp3",
+    "image": "/voices/eleanor.jpg",
+    "color": "#3b82f6",
+    "info": {
+      "id": "voice-it-female-5",
+      "name": "Sarah (Italian)",
+      "description": "Young adult woman with a confident and warm, mature quality and a reassuring, professional tone.",
+      "category": "preset",
+      "initials": "SA",
+      "gender": "Female",
+      "languageCode": "it",
+      "languageName": "Italian",
+      "tags": [
+        "Italian",
+        "Female",
+        "Entertainment tv",
+        "Professional"
+      ]
+    },
+    "name": "Sarah (Italian)",
+    "description": "Young adult woman with a confident and warm, mature quality and a reassuring, professional tone.",
+    "category": "preset",
+    "avatarUrl": "/voices/eleanor.jpg",
+    "sampleUrl": "/voices/samples/it/voice_it_female_5.mp3",
+    "initials": "SA",
+    "gender": "Female",
+    "languageCode": "it",
+    "languageName": "Italian",
+    "tags": [
+      "Italian",
+      "Female",
+      "Entertainment tv",
+      "Professional"
+    ]
+  }
+]

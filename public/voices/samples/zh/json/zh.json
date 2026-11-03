@@ -1,0 +1,372 @@
+[
+  {
+    "id": "voice-zh-male-1",
+    "audio": "voice_zh_male_1.mp3",
+    "image": "/voices/sterling.jpg",
+    "color": "#38bdf8",
+    "info": {
+      "id": "voice-zh-male-1",
+      "name": "Charlie (Chinese)",
+      "description": "A young Australian male with a confident and energetic voice.",
+      "category": "preset",
+      "initials": "CH",
+      "gender": "Male",
+      "languageCode": "zh",
+      "languageName": "Chinese",
+      "tags": [
+        "Chinese",
+        "Male",
+        "Conversational",
+        "Hyped"
+      ]
+    },
+    "name": "Charlie (Chinese)",
+    "description": "A young Australian male with a confident and energetic voice.",
+    "category": "preset",
+    "avatarUrl": "/voices/sterling.jpg",
+    "sampleUrl": "/voices/samples/zh/voice_zh_male_1.mp3",
+    "initials": "CH",
+    "gender": "Male",
+    "languageCode": "zh",
+    "languageName": "Chinese",
+    "tags": [
+      "Chinese",
+      "Male",
+      "Conversational",
+      "Hyped"
+    ]
+  },
+  {
+    "id": "voice-zh-male-2",
+    "audio": "voice_zh_male_2.mp3",
+    "image": "/voices/jax.jpg",
+    "color": "#f59e0b",
+    "info": {
+      "id": "voice-zh-male-2",
+      "name": "Will (Chinese)",
+      "description": "Conversational and laid back.",
+      "category": "preset",
+      "initials": "WI",
+      "gender": "Male",
+      "languageCode": "zh",
+      "languageName": "Chinese",
+      "tags": [
+        "Chinese",
+        "Male",
+        "Conversational",
+        "Chill"
+      ]
+    },
+    "name": "Will (Chinese)",
+    "description": "Conversational and laid back.",
+    "category": "preset",
+    "avatarUrl": "/voices/jax.jpg",
+    "sampleUrl": "/voices/samples/zh/voice_zh_male_2.mp3",
+    "initials": "WI",
+    "gender": "Male",
+    "languageCode": "zh",
+    "languageName": "Chinese",
+    "tags": [
+      "Chinese",
+      "Male",
+      "Conversational",
+      "Chill"
+    ]
+  },
+  {
+    "id": "voice-zh-male-3",
+    "audio": "voice_zh_male_3.mp3",
+    "image": "/voices/alistair.jpg",
+    "color": "#d97706",
+    "info": {
+      "id": "voice-zh-male-3",
+      "name": "Brian (Chinese)",
+      "description": "Middle-aged man with a resonant and comforting tone. Great for narrations and advertisements.",
+      "category": "preset",
+      "initials": "BR",
+      "gender": "Male",
+      "languageCode": "zh",
+      "languageName": "Chinese",
+      "tags": [
+        "Chinese",
+        "Male",
+        "Social media",
+        "Classy"
+      ]
+    },
+    "name": "Brian (Chinese)",
+    "description": "Middle-aged man with a resonant and comforting tone. Great for narrations and advertisements.",
+    "category": "preset",
+    "avatarUrl": "/voices/alistair.jpg",
+    "sampleUrl": "/voices/samples/zh/voice_zh_male_3.mp3",
+    "initials": "BR",
+    "gender": "Male",
+    "languageCode": "zh",
+    "languageName": "Chinese",
+    "tags": [
+      "Chinese",
+      "Male",
+      "Social media",
+      "Classy"
+    ]
+  },
+  {
+    "id": "voice-zh-male-4",
+    "audio": "voice_zh_male_4.mp3",
+    "image": "/voices/george.jpg",
+    "color": "#10b981",
+    "info": {
+      "id": "voice-zh-male-4",
+      "name": "Bill (Chinese)",
+      "description": "Friendly and comforting voice ready to narrate your stories.",
+      "category": "preset",
+      "initials": "BI",
+      "gender": "Male",
+      "languageCode": "zh",
+      "languageName": "Chinese",
+      "tags": [
+        "Chinese",
+        "Male",
+        "Advertisement",
+        "Crisp"
+      ]
+    },
+    "name": "Bill (Chinese)",
+    "description": "Friendly and comforting voice ready to narrate your stories.",
+    "category": "preset",
+    "avatarUrl": "/voices/george.jpg",
+    "sampleUrl": "/voices/samples/zh/voice_zh_male_4.mp3",
+    "initials": "BI",
+    "gender": "Male",
+    "languageCode": "zh",
+    "languageName": "Chinese",
+    "tags": [
+      "Chinese",
+      "Male",
+      "Advertisement",
+      "Crisp"
+    ]
+  },
+  {
+    "id": "voice-zh-male-5",
+    "audio": "voice_zh_male_5.mp3",
+    "image": "/voices/roger.jpg",
+    "color": "#a855f7",
+    "info": {
+      "id": "voice-zh-male-5",
+      "name": "Roger (Chinese)",
+      "description": "Easy going and perfect for casual conversations.",
+      "category": "preset",
+      "initials": "RO",
+      "gender": "Male",
+      "languageCode": "zh",
+      "languageName": "Chinese",
+      "tags": [
+        "Chinese",
+        "Male",
+        "Conversational",
+        "Classy"
+      ]
+    },
+    "name": "Roger (Chinese)",
+    "description": "Easy going and perfect for casual conversations.",
+    "category": "preset",
+    "avatarUrl": "/voices/roger.jpg",
+    "sampleUrl": "/voices/samples/zh/voice_zh_male_5.mp3",
+    "initials": "RO",
+    "gender": "Male",
+    "languageCode": "zh",
+    "languageName": "Chinese",
+    "tags": [
+      "Chinese",
+      "Male",
+      "Conversational",
+      "Classy"
+    ]
+  },
+  {
+    "id": "voice-zh-female-1",
+    "audio": "voice_zh_female_1.mp3",
+    "image": "/voices/serena.jpg",
+    "color": "#ec4899",
+    "info": {
+      "id": "voice-zh-female-1",
+      "name": "Sarah (Chinese)",
+      "description": "Young adult woman with a confident and warm, mature quality and a reassuring, professional tone.",
+      "category": "preset",
+      "initials": "SA",
+      "gender": "Female",
+      "languageCode": "zh",
+      "languageName": "Chinese",
+      "tags": [
+        "Chinese",
+        "Female",
+        "Entertainment tv",
+        "Professional"
+      ]
+    },
+    "name": "Sarah (Chinese)",
+    "description": "Young adult woman with a confident and warm, mature quality and a reassuring, professional tone.",
+    "category": "preset",
+    "avatarUrl": "/voices/serena.jpg",
+    "sampleUrl": "/voices/samples/zh/voice_zh_female_1.mp3",
+    "initials": "SA",
+    "gender": "Female",
+    "languageCode": "zh",
+    "languageName": "Chinese",
+    "tags": [
+      "Chinese",
+      "Female",
+      "Entertainment tv",
+      "Professional"
+    ]
+  },
+  {
+    "id": "voice-zh-female-2",
+    "audio": "voice_zh_female_2.mp3",
+    "image": "/voices/chloe.jpg",
+    "color": "#06b6d4",
+    "info": {
+      "id": "voice-zh-female-2",
+      "name": "Laura (Chinese)",
+      "description": "This young adult female voice delivers sunny enthusiasm with a quirky attitude.",
+      "category": "preset",
+      "initials": "LA",
+      "gender": "Female",
+      "languageCode": "zh",
+      "languageName": "Chinese",
+      "tags": [
+        "Chinese",
+        "Female",
+        "Social media",
+        "Sassy"
+      ]
+    },
+    "name": "Laura (Chinese)",
+    "description": "This young adult female voice delivers sunny enthusiasm with a quirky attitude.",
+    "category": "preset",
+    "avatarUrl": "/voices/chloe.jpg",
+    "sampleUrl": "/voices/samples/zh/voice_zh_female_2.mp3",
+    "initials": "LA",
+    "gender": "Female",
+    "languageCode": "zh",
+    "languageName": "Chinese",
+    "tags": [
+      "Chinese",
+      "Female",
+      "Social media",
+      "Sassy"
+    ]
+  },
+  {
+    "id": "voice-zh-female-3",
+    "audio": "voice_zh_female_3.mp3",
+    "image": "/voices/sarah.jpg",
+    "color": "#8b5cf6",
+    "info": {
+      "id": "voice-zh-female-3",
+      "name": "Jessica (Chinese)",
+      "description": "Young and popular, this playful American female voice is perfect for trendy content.",
+      "category": "preset",
+      "initials": "JE",
+      "gender": "Female",
+      "languageCode": "zh",
+      "languageName": "Chinese",
+      "tags": [
+        "Chinese",
+        "Female",
+        "Conversational",
+        "Cute"
+      ]
+    },
+    "name": "Jessica (Chinese)",
+    "description": "Young and popular, this playful American female voice is perfect for trendy content.",
+    "category": "preset",
+    "avatarUrl": "/voices/sarah.jpg",
+    "sampleUrl": "/voices/samples/zh/voice_zh_female_3.mp3",
+    "initials": "JE",
+    "gender": "Female",
+    "languageCode": "zh",
+    "languageName": "Chinese",
+    "tags": [
+      "Chinese",
+      "Female",
+      "Conversational",
+      "Cute"
+    ]
+  },
+  {
+    "id": "voice-zh-female-4",
+    "audio": "voice_zh_female_4.mp3",
+    "image": "/voices/jessica.jpg",
+    "color": "#ef4444",
+    "info": {
+      "id": "voice-zh-female-4",
+      "name": "Lily (Chinese)",
+      "description": "Velvety British female voice delivers news and narrations with warmth and clarity.",
+      "category": "preset",
+      "initials": "LI",
+      "gender": "Female",
+      "languageCode": "zh",
+      "languageName": "Chinese",
+      "tags": [
+        "Chinese",
+        "Female",
+        "Informative educational",
+        "Confident"
+      ]
+    },
+    "name": "Lily (Chinese)",
+    "description": "Velvety British female voice delivers news and narrations with warmth and clarity.",
+    "category": "preset",
+    "avatarUrl": "/voices/jessica.jpg",
+    "sampleUrl": "/voices/samples/zh/voice_zh_female_4.mp3",
+    "initials": "LI",
+    "gender": "Female",
+    "languageCode": "zh",
+    "languageName": "Chinese",
+    "tags": [
+      "Chinese",
+      "Female",
+      "Informative educational",
+      "Confident"
+    ]
+  },
+  {
+    "id": "voice-zh-female-5",
+    "audio": "voice_zh_female_5.mp3",
+    "image": "/voices/eleanor.jpg",
+    "color": "#3b82f6",
+    "info": {
+      "id": "voice-zh-female-5",
+      "name": "Bella (Chinese)",
+      "description": "This voice is warm, bright, and professional, characterized by a Standard American accent and a polished, narrative quality. It features a medium-high pitch with crisp diction and a deliberate, rhythmic pace that makes it highly intelligible and engaging for long-form listening.",
+      "category": "preset",
+      "initials": "BE",
+      "gender": "Female",
+      "languageCode": "zh",
+      "languageName": "Chinese",
+      "tags": [
+        "Chinese",
+        "Female",
+        "Informative educational",
+        "Professional"
+      ]
+    },
+    "name": "Bella (Chinese)",
+    "description": "This voice is warm, bright, and professional, characterized by a Standard American accent and a polished, narrative quality. It features a medium-high pitch with crisp diction and a deliberate, rhythmic pace that makes it highly intelligible and engaging for long-form listening.",
+    "category": "preset",
+    "avatarUrl": "/voices/eleanor.jpg",
+    "sampleUrl": "/voices/samples/zh/voice_zh_female_5.mp3",
+    "initials": "BE",
+    "gender": "Female",
+    "languageCode": "zh",
+    "languageName": "Chinese",
+    "tags": [
+      "Chinese",
+      "Female",
+      "Informative educational",
+      "Professional"
+    ]
+  }
+]

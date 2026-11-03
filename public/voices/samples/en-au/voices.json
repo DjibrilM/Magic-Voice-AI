@@ -1,0 +1,392 @@
+[
+  {
+    "id": "voice-en-au-male-1",
+    "audio": "voice_en-au_male_1.mp3",
+    "image": "/voices/sterling.jpg",
+    "color": "#38bdf8",
+    "info": {
+      "id": "voice-en-au-male-1",
+      "name": "Peter (English (Australia))",
+      "description": "A mid-30s Australian educator and narrator with clear and lively delivery.",
+      "category": "preset",
+      "initials": "PE",
+      "gender": "Male",
+      "languageCode": "en-au",
+      "languageName": "English (Australia)",
+      "tags": [
+        "English (Australia)",
+        "Male",
+        "Australian",
+        "Narrator",
+        "Educator"
+      ]
+    },
+    "name": "Peter (English (Australia))",
+    "description": "A mid-30s Australian educator and narrator with clear and lively delivery.",
+    "category": "preset",
+    "avatarUrl": "/voices/sterling.jpg",
+    "sampleUrl": "/voices/samples/en-au/voice_en-au_male_1.mp3",
+    "initials": "PE",
+    "gender": "Male",
+    "languageCode": "en-au",
+    "languageName": "English (Australia)",
+    "tags": [
+      "English (Australia)",
+      "Male",
+      "Australian",
+      "Narrator",
+      "Educator"
+    ]
+  },
+  {
+    "id": "voice-en-au-male-2",
+    "audio": "voice_en-au_male_2.mp3",
+    "image": "/voices/jax.jpg",
+    "color": "#ec4899",
+    "info": {
+      "id": "voice-en-au-male-2",
+      "name": "Marc (English (Australia))",
+      "description": "Rich, mid-deep Australian baritone delivering radio-quality resonance.",
+      "category": "preset",
+      "initials": "MA",
+      "gender": "Male",
+      "languageCode": "en-au",
+      "languageName": "English (Australia)",
+      "tags": [
+        "English (Australia)",
+        "Male",
+        "Australian",
+        "Deep",
+        "Baritone"
+      ]
+    },
+    "name": "Marc (English (Australia))",
+    "description": "Rich, mid-deep Australian baritone delivering radio-quality resonance.",
+    "category": "preset",
+    "avatarUrl": "/voices/jax.jpg",
+    "sampleUrl": "/voices/samples/en-au/voice_en-au_male_2.mp3",
+    "initials": "MA",
+    "gender": "Male",
+    "languageCode": "en-au",
+    "languageName": "English (Australia)",
+    "tags": [
+      "English (Australia)",
+      "Male",
+      "Australian",
+      "Deep",
+      "Baritone"
+    ]
+  },
+  {
+    "id": "voice-en-au-male-3",
+    "audio": "voice_en-au_male_3.mp3",
+    "image": "/voices/alistair.jpg",
+    "color": "#f59e0b",
+    "info": {
+      "id": "voice-en-au-male-3",
+      "name": "David (English (Australia))",
+      "description": "Easy-going, trustworthy, fun Australian conversational friend.",
+      "category": "preset",
+      "initials": "DA",
+      "gender": "Male",
+      "languageCode": "en-au",
+      "languageName": "English (Australia)",
+      "tags": [
+        "English (Australia)",
+        "Male",
+        "Australian",
+        "Conversational",
+        "Friendly"
+      ]
+    },
+    "name": "David (English (Australia))",
+    "description": "Easy-going, trustworthy, fun Australian conversational friend.",
+    "category": "preset",
+    "avatarUrl": "/voices/alistair.jpg",
+    "sampleUrl": "/voices/samples/en-au/voice_en-au_male_3.mp3",
+    "initials": "DA",
+    "gender": "Male",
+    "languageCode": "en-au",
+    "languageName": "English (Australia)",
+    "tags": [
+      "English (Australia)",
+      "Male",
+      "Australian",
+      "Conversational",
+      "Friendly"
+    ]
+  },
+  {
+    "id": "voice-en-au-male-4",
+    "audio": "voice_en-au_male_4.mp3",
+    "image": "/voices/george.jpg",
+    "color": "#06b6d4",
+    "info": {
+      "id": "voice-en-au-male-4",
+      "name": "Archie (English (Australia))",
+      "description": "24-year-old Australian male, casual and confident for social and modern content.",
+      "category": "preset",
+      "initials": "AR",
+      "gender": "Male",
+      "languageCode": "en-au",
+      "languageName": "English (Australia)",
+      "tags": [
+        "English (Australia)",
+        "Male",
+        "Australian",
+        "Youthful",
+        "Social Media"
+      ]
+    },
+    "name": "Archie (English (Australia))",
+    "description": "24-year-old Australian male, casual and confident for social and modern content.",
+    "category": "preset",
+    "avatarUrl": "/voices/george.jpg",
+    "sampleUrl": "/voices/samples/en-au/voice_en-au_male_4.mp3",
+    "initials": "AR",
+    "gender": "Male",
+    "languageCode": "en-au",
+    "languageName": "English (Australia)",
+    "tags": [
+      "English (Australia)",
+      "Male",
+      "Australian",
+      "Youthful",
+      "Social Media"
+    ]
+  },
+  {
+    "id": "voice-en-au-male-5",
+    "audio": "voice_en-au_male_5.mp3",
+    "image": "/voices/roger.jpg",
+    "color": "#d97706",
+    "info": {
+      "id": "voice-en-au-male-5",
+      "name": "Brandon (English (Australia))",
+      "description": "Warm and professional Australian male, suited for explainers, advertising, and corporate content.",
+      "category": "preset",
+      "initials": "BR",
+      "gender": "Male",
+      "languageCode": "en-au",
+      "languageName": "English (Australia)",
+      "tags": [
+        "English (Australia)",
+        "Male",
+        "Australian",
+        "Professional",
+        "Corporate"
+      ]
+    },
+    "name": "Brandon (English (Australia))",
+    "description": "Warm and professional Australian male, suited for explainers, advertising, and corporate content.",
+    "category": "preset",
+    "avatarUrl": "/voices/roger.jpg",
+    "sampleUrl": "/voices/samples/en-au/voice_en-au_male_5.mp3",
+    "initials": "BR",
+    "gender": "Male",
+    "languageCode": "en-au",
+    "languageName": "English (Australia)",
+    "tags": [
+      "English (Australia)",
+      "Male",
+      "Australian",
+      "Professional",
+      "Corporate"
+    ]
+  },
+  {
+    "id": "voice-en-au-female-1",
+    "audio": "voice_en-au_female_1.mp3",
+    "image": "/voices/serena.jpg",
+    "color": "#ec4899",
+    "info": {
+      "id": "voice-en-au-female-1",
+      "name": "Carla (English (Australia))",
+      "description": "Warm, natural Australian female voice with a friendly, conversational tone.",
+      "category": "preset",
+      "initials": "CA",
+      "gender": "Female",
+      "languageCode": "en-au",
+      "languageName": "English (Australia)",
+      "tags": [
+        "English (Australia)",
+        "Female",
+        "Australian",
+        "Conversational",
+        "Warm"
+      ]
+    },
+    "name": "Carla (English (Australia))",
+    "description": "Warm, natural Australian female voice with a friendly, conversational tone.",
+    "category": "preset",
+    "avatarUrl": "/voices/serena.jpg",
+    "sampleUrl": "/voices/samples/en-au/voice_en-au_female_1.mp3",
+    "initials": "CA",
+    "gender": "Female",
+    "languageCode": "en-au",
+    "languageName": "English (Australia)",
+    "tags": [
+      "English (Australia)",
+      "Female",
+      "Australian",
+      "Conversational",
+      "Warm"
+    ]
+  },
+  {
+    "id": "voice-en-au-female-2",
+    "audio": "voice_en-au_female_2.mp3",
+    "image": "/voices/chloe.jpg",
+    "color": "#06b6d4",
+    "info": {
+      "id": "voice-en-au-female-2",
+      "name": "Naomy (English (Australia))",
+      "description": "Calm, educational tone with authentic Australian accent.",
+      "category": "preset",
+      "initials": "NA",
+      "gender": "Female",
+      "languageCode": "en-au",
+      "languageName": "English (Australia)",
+      "tags": [
+        "English (Australia)",
+        "Female",
+        "Australian",
+        "Calm",
+        "Educational"
+      ]
+    },
+    "name": "Naomy (English (Australia))",
+    "description": "Calm, educational tone with authentic Australian accent.",
+    "category": "preset",
+    "avatarUrl": "/voices/chloe.jpg",
+    "sampleUrl": "/voices/samples/en-au/voice_en-au_female_2.mp3",
+    "initials": "NA",
+    "gender": "Female",
+    "languageCode": "en-au",
+    "languageName": "English (Australia)",
+    "tags": [
+      "English (Australia)",
+      "Female",
+      "Australian",
+      "Calm",
+      "Educational"
+    ]
+  },
+  {
+    "id": "voice-en-au-female-3",
+    "audio": "voice_en-au_female_3.mp3",
+    "image": "/voices/sarah.jpg",
+    "color": "#8b5cf6",
+    "info": {
+      "id": "voice-en-au-female-3",
+      "name": "Gabby (English (Australia))",
+      "description": "Soft, young Australian female voice, pleasant and approachable.",
+      "category": "preset",
+      "initials": "GA",
+      "gender": "Female",
+      "languageCode": "en-au",
+      "languageName": "English (Australia)",
+      "tags": [
+        "English (Australia)",
+        "Female",
+        "Australian",
+        "Soft",
+        "Young"
+      ]
+    },
+    "name": "Gabby (English (Australia))",
+    "description": "Soft, young Australian female voice, pleasant and approachable.",
+    "category": "preset",
+    "avatarUrl": "/voices/sarah.jpg",
+    "sampleUrl": "/voices/samples/en-au/voice_en-au_female_3.mp3",
+    "initials": "GA",
+    "gender": "Female",
+    "languageCode": "en-au",
+    "languageName": "English (Australia)",
+    "tags": [
+      "English (Australia)",
+      "Female",
+      "Australian",
+      "Soft",
+      "Young"
+    ]
+  },
+  {
+    "id": "voice-en-au-female-4",
+    "audio": "voice_en-au_female_4.mp3",
+    "image": "/voices/jessica.jpg",
+    "color": "#ef4444",
+    "info": {
+      "id": "voice-en-au-female-4",
+      "name": "Kez (English (Australia))",
+      "description": "Real Aussie, warm and clear, perfect for commercials, radio, and friendly narration.",
+      "category": "preset",
+      "initials": "KE",
+      "gender": "Female",
+      "languageCode": "en-au",
+      "languageName": "English (Australia)",
+      "tags": [
+        "English (Australia)",
+        "Female",
+        "Australian",
+        "Clear",
+        "Commercial"
+      ]
+    },
+    "name": "Kez (English (Australia))",
+    "description": "Real Aussie, warm and clear, perfect for commercials, radio, and friendly narration.",
+    "category": "preset",
+    "avatarUrl": "/voices/jessica.jpg",
+    "sampleUrl": "/voices/samples/en-au/voice_en-au_female_4.mp3",
+    "initials": "KE",
+    "gender": "Female",
+    "languageCode": "en-au",
+    "languageName": "English (Australia)",
+    "tags": [
+      "English (Australia)",
+      "Female",
+      "Australian",
+      "Clear",
+      "Commercial"
+    ]
+  },
+  {
+    "id": "voice-en-au-female-5",
+    "audio": "voice_en-au_female_5.mp3",
+    "image": "/voices/eleanor.jpg",
+    "color": "#3b82f6",
+    "info": {
+      "id": "voice-en-au-female-5",
+      "name": "Willow (English (Australia))",
+      "description": "Australian female storyteller with an engaging, narrative resonance.",
+      "category": "preset",
+      "initials": "WI",
+      "gender": "Female",
+      "languageCode": "en-au",
+      "languageName": "English (Australia)",
+      "tags": [
+        "English (Australia)",
+        "Female",
+        "Australian",
+        "Storyteller",
+        "Resonant"
+      ]
+    },
+    "name": "Willow (English (Australia))",
+    "description": "Australian female storyteller with an engaging, narrative resonance.",
+    "category": "preset",
+    "avatarUrl": "/voices/eleanor.jpg",
+    "sampleUrl": "/voices/samples/en-au/voice_en-au_female_5.mp3",
+    "initials": "WI",
+    "gender": "Female",
+    "languageCode": "en-au",
+    "languageName": "English (Australia)",
+    "tags": [
+      "English (Australia)",
+      "Female",
+      "Australian",
+      "Storyteller",
+      "Resonant"
+    ]
+  }
+]

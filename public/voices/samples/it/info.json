@@ -1,0 +1,11 @@
+{
+  "language": "Italian",
+  "flag": "🇮🇹",
+  "code": "it",
+  "name": "Italian",
+  "nativeName": "Italiano",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/it/json/voices.json",
+  "count": 10
+}

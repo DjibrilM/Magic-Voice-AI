@@ -1,0 +1,11 @@
+{
+  "language": "Korean",
+  "flag": "🇰🇷",
+  "code": "ko",
+  "name": "Korean",
+  "nativeName": "한국어",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/ko/json/voices.json",
+  "count": 10
+}

@@ -1,0 +1,11 @@
+{
+  "language": "Swahili",
+  "flag": "🇰🇪",
+  "code": "sw",
+  "name": "Swahili",
+  "nativeName": "Kiswahili",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/sw/json/voices.json",
+  "count": 10
+}

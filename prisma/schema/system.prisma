@@ -1,0 +1,7 @@
+model UserPreference {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("user_preferences")
+}

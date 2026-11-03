@@ -1,0 +1,11 @@
+{
+  "language": "Hindi",
+  "flag": "🇮🇳",
+  "code": "hi",
+  "name": "Hindi",
+  "nativeName": "हिन्दी",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/hi/json/voices.json",
+  "count": 10
+}

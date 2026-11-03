@@ -1,0 +1,11 @@
+{
+  "language": "Chinese",
+  "flag": "🇨🇳",
+  "code": "zh",
+  "name": "Chinese",
+  "nativeName": "中文 (Mandarin)",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/zh/json/voices.json",
+  "count": 10
+}

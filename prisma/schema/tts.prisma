@@ -1,0 +1,48 @@
+model Conversation {
+  id              String         @id
+  text            String
+  previewSnippet  String?
+  voiceName       String
+  voiceColor      String
+  voiceAvatarUrl  String?
+  dateGroup       String
+  timeAgo         String
+  timestamp       BigInt?
+  model           String
+  engine          String         @default("cosyvoice3")
+  duration        String
+  durationSec     Float?
+  emotion         String?
+  audioUrl        String?
+  waveform        String?        // JSON string of number[]
+  voicePrompt     String?
+  language        String?
+  speakerCount    Int            @default(1)
+  generationId    String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  rounds          SpeechRound[]
+  activity        Activity?
+
+  @@map("conversations")
+}
+
+model SpeechRound {
+  id                String       @id
+  conversationId    String
+  roundOrder        Int          @default(0)
+  voiceId           String
+  text              String
+  speed             Float        @default(1.0)
+  emotion           String?
+  pace              String?
+  prompt            String?
+  description       String?
+  referenceAudioSrc String?
+  speakerName       String?
+  speakerColor      String?
+  conversation      Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("speech_rounds")
+}

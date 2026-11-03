@@ -1,0 +1,11 @@
+{
+  "language": "Portuguese",
+  "flag": "🇧🇷",
+  "code": "pt",
+  "name": "Portuguese",
+  "nativeName": "Português",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/pt/json/voices.json",
+  "count": 10
+}

@@ -1,0 +1,11 @@
+{
+  "language": "Spanish",
+  "flag": "🇪🇸",
+  "code": "es",
+  "name": "Spanish",
+  "nativeName": "Español",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/es/json/voices.json",
+  "count": 10
+}

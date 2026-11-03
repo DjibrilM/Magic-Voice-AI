@@ -1,0 +1,11 @@
+{
+  "language": "Japanese",
+  "flag": "🇯🇵",
+  "code": "ja",
+  "name": "Japanese",
+  "nativeName": "日本語",
+  "list": "json/voices.json",
+  "location": "json/voices.json",
+  "listUrl": "/voices/samples/ja/json/voices.json",
+  "count": 10
+}
