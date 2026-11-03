@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom"
+import { useLocation } from "react-router-dom"
 import {
   SidebarToggleIcon,
   SettingsIcon,
@@ -48,17 +48,6 @@ export function Header({ isSidebarOpen, onToggleSidebar }: HeaderProps) {
             {title}
           </span>
         </div>
-      </div>
-
-      <div>
-        <Link
-          to="/settings"
-          className="flex size-7 items-center justify-center rounded-md bg-white/6 text-white/75 hover:text-white hover:bg-white/10 transition-colors"
-          title="Settings"
-          aria-label="Settings"
-        >
-          <SettingsIcon className="size-[19px]" />
-        </Link>
       </div>
     </header>
   )

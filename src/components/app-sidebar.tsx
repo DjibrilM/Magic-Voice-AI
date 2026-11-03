@@ -64,7 +64,7 @@ export function AppSidebar({ isOpen = true }: { isOpen?: boolean }) {
       </div>
 
       {/* Bottom Section: Minimalist System Resource Telemetry */}
-      <div className="border-t border-[#262629]/80 p-3 bg-[#161616]">
+      <div className="border-t border-[#262629] bg-[#161616] shrink-0">
         <SystemMetrics />
       </div>
     </aside>

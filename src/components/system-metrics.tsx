@@ -22,7 +22,7 @@ interface MetricsData {
 }
 
 export function SystemMetrics() {
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
   const [metrics, setMetrics] = useState<MetricsData>({
     ram: { usedGB: "45.8", totalGB: "48.0", percent: 95 },
     cpu: { percent: 14, cores: 14, model: "Apple Silicon" },
@@ -59,7 +59,6 @@ export function SystemMetrics() {
           const cpuModel = rawData?.cpu?.model ?? prev.cpu.model ?? "Apple Silicon"
           const gpuName = rawData?.gpu?.name ?? prev.gpu.name ?? "Apple Silicon GPU"
 
-          // Small fluctuations keep the displayed telemetry responsive.
           const cpuJitter = Math.round((Math.random() - 0.48) * 8)
           const newCpu = Math.max(4, Math.min(96, baseCpu + cpuJitter))
 
@@ -109,14 +108,14 @@ export function SystemMetrics() {
   }, [])
 
   return (
-    <div className="rounded-xl border border-white/8 bg-white/3 select-none transition-colors">
-      {/* Header */}
+    <div className="w-full select-none transition-colors">
+      {/* Header - Sized exactly to match character count action bar (h-[46px]) */}
       <button
         type="button"
         onClick={() => setIsExpanded((prev) => !prev)}
         className={clsx(
-          "flex w-full items-center justify-between p-[8.5px] hover:bg-white/4 transition-colors cursor-pointer text-left",
-          isExpanded ? "rounded-t-xl rounded-b-none" : "rounded-xl"
+          "flex w-full h-[46px] items-center justify-between px-3.5 hover:bg-white/[0.04] transition-colors cursor-pointer text-left",
+          isExpanded && "border-b border-white/[0.06]"
         )}
         title={isExpanded ? "Collapse Resources" : "Expand Resources"}
       >
@@ -144,7 +143,7 @@ export function SystemMetrics() {
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <div className="flex flex-col gap-3 px-3 pb-3 pt-1 border-t border-white/[0.04]">
+            <div className="flex flex-col gap-3 px-3.5 py-3">
               {/* RAM */}
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between text-xs">

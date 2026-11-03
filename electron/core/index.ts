@@ -35,6 +35,7 @@ export function bootstrapCore(): CoreContext {
   // 2. Instantiate domain services
   const systemService = new SystemService()
   const modelsService = new ModelsService()
+  systemService.setModelsService(modelsService)
 
   // 3. Instantiate domain repositories with injected dbService
   const voiceRepository = new VoiceRepositoryService(dbService)
