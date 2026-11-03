@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.magicvoice.ai",
-  "asar": true,
+  "asar": false,
   "productName": "Magic-Voice AI",
   "directories": {
     "buildResources": "build",
@@ -12,24 +12,17 @@
     "dist-electron",
     "node_modules/.prisma/**/*"
   ],
-  "asarUnpack": [
-    "dist/voices/**/*",
-    "node_modules/@qvac/**/*",
-    "node_modules/bare-*/**/*",
-    "node_modules/@prisma/**/*",
-    "node_modules/.prisma/**/*"
-  ],
   "extraResources": [
     {
       "from": "node_modules/.prisma",
-      "to": "app.asar.unpacked/node_modules/.prisma",
+      "to": "app/node_modules/.prisma",
       "filter": [
         "**/*"
       ]
     },
     {
       "from": "public/voices",
-      "to": "app.asar.unpacked/voices",
+      "to": "voices",
       "filter": [
         "**/*"
       ]

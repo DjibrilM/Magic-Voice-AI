@@ -11,6 +11,7 @@ function loadPrismaClientClass(): typeof PrismaClientType {
   const candidates = [
     ...(resourcesPath
       ? [
+          path.resolve(resourcesPath, 'app/node_modules/.prisma/client/index.js'),
           path.resolve(
             resourcesPath,
             'app.asar.unpacked/node_modules/.prisma/client/index.js'
