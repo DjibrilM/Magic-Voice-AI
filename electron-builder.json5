@@ -13,6 +13,7 @@
     "node_modules/.prisma/**/*"
   ],
   "asarUnpack": [
+    "dist/voices/**/*",
     "node_modules/@qvac/**/*",
     "node_modules/bare-*/**/*",
     "node_modules/@prisma/**/*",
@@ -22,6 +23,13 @@
     {
       "from": "node_modules/.prisma",
       "to": "app.asar.unpacked/node_modules/.prisma",
+      "filter": [
+        "**/*"
+      ]
+    },
+    {
+      "from": "public/voices",
+      "to": "app.asar.unpacked/voices",
       "filter": [
         "**/*"
       ]

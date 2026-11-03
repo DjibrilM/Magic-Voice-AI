@@ -144,23 +144,59 @@ app.whenReady().then(() => {
     return false;
   });
 
-  // Handle echo-media:// protocol for high-performance direct streaming of audio files from disk
+  // Redirect any root-relative file:///voices/* requests in packaged file:// windows
+  // to the custom echo-media:// protocol so preset/custom voice assets always resolve.
+  session.defaultSession.webRequest.onBeforeRequest(
+    { urls: ["file:///voices/*"] },
+    (details, callback) => {
+      try {
+        const parsed = new URL(details.url);
+        const relVoicesPath = decodeURIComponent(parsed.pathname);
+        const resolved = core.voiceService.resolveVoiceAssetDiskPath(relVoicesPath);
+        if (resolved) {
+          return callback({ redirectURL: core.voiceService.toEchoMediaUrl(resolved) });
+        }
+      } catch {
+        // ignore
+      }
+      callback({});
+    }
+  );
+
+  // Handle echo-media:// protocol for high-performance direct streaming of audio & voice assets from disk
   protocol.handle("echo-media", async (request) => {
     try {
-      const raw = request.url.replace(/^echo-media:\/\//, "");
+      const raw = request.url.replace(/^echo-media:\/\//, "").split("?")[0];
       let filePath = decodeURIComponent(raw.startsWith("/") ? raw : "/" + raw);
-      if (process.platform === "win32" && filePath.startsWith("/")) {
+      if (process.platform === "win32" && /^\/[a-zA-Z]:/.test(filePath)) {
         filePath = filePath.slice(1);
+      }
+      if (!fs.existsSync(filePath)) {
+        const resolvedVoiceAsset = core.voiceService.resolveVoiceAssetDiskPath(filePath);
+        if (resolvedVoiceAsset) {
+          filePath = resolvedVoiceAsset;
+        }
       }
       if (!fs.existsSync(filePath)) {
         return new Response("Media not found", { status: 404 });
       }
       const total = fs.statSync(filePath).size;
-      const contentType = filePath.endsWith(".mp3")
-        ? "audio/mpeg"
-        : filePath.endsWith(".wav")
-          ? "audio/wav"
-          : "application/octet-stream";
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeMap: Record<string, string> = {
+        ".mp3": "audio/mpeg",
+        ".wav": "audio/wav",
+        ".m4a": "audio/mp4",
+        ".aac": "audio/aac",
+        ".ogg": "audio/ogg",
+        ".flac": "audio/flac",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+        ".svg": "image/svg+xml",
+        ".json": "application/json",
+      };
+      const contentType = mimeMap[ext] || "application/octet-stream";
       const headers = new Headers({
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",

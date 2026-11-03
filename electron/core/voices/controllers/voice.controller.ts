@@ -51,13 +51,33 @@ export class VoiceController extends BaseController {
     )
 
     // 5. Query all custom cloned voices from SQLite
-    ipcMain.handle(IPC_CHANNELS.VOICES_LIST_CUSTOM, async () => {
+    const handleListCustomVoices = async () => {
       try {
         const list = await this.voiceService.listCustomVoices()
         return { success: true, data: list }
       } catch (err: any) {
         return { success: false, error: err?.message || String(err) }
       }
+    }
+    ipcMain.handle(IPC_CHANNELS.VOICES_LIST_CUSTOM, handleListCustomVoices)
+    ipcMain.handle('db:voices:list', handleListCustomVoices)
+
+    // 6. Save/update custom voice metadata in SQLite (`db:voices:save`)
+    ipcMain.handle('db:voices:save', async (_: Electron.IpcMainInvokeEvent, voice: any) => {
+      try {
+        const repo = this.voiceService.getRepository()
+        if (!repo) {
+          return { success: false, error: 'Voice repository unavailable' }
+        }
+        return await repo.saveCustomVoice(voice)
+      } catch (err: any) {
+        return { success: false, error: err?.message || String(err) }
+      }
+    })
+
+    // 7. Delete custom voice alias (`db:voices:delete`)
+    ipcMain.handle('db:voices:delete', async (_: Electron.IpcMainInvokeEvent, { id }: { id: string }) => {
+      return this.voiceService.deleteCustomVoice(id)
     })
   }
 }
