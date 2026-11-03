@@ -40,6 +40,11 @@ export const IPC_CHANNELS = {
   SYSTEM_GET_MEDIA_FOLDER: 'system:getMediaFolder',
   SYSTEM_SELECT_MEDIA_FOLDER: 'system:selectMediaFolder',
   SYSTEM_SET_MEDIA_FOLDER: 'system:setMediaFolder',
+  SYSTEM_GET_INFERENCE_DEVICE: 'system:getInferenceDevice',
+  SYSTEM_SET_INFERENCE_DEVICE: 'system:setInferenceDevice',
+  SYSTEM_GET_MICROPHONE_PERMISSION: 'system:getMicrophonePermission',
+  SYSTEM_REQUEST_MICROPHONE_PERMISSION: 'system:requestMicrophonePermission',
+  SYSTEM_OPEN_MICROPHONE_SETTINGS: 'system:openMicrophoneSettings',
 
   // Compatibility aliases
   DB_CONVERSATIONS_LIST: 'tts:history:list',

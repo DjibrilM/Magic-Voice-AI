@@ -99,7 +99,7 @@ export interface HistoryEntry {
   timeAgo: string
   timestamp?: number
   model: string
-  engine?: 'cosyvoice3' | 'chatterbox'
+  engine?: 'cosyvoice3'
   duration: string
   durationSec?: number
   emotion?: QvacEmotion

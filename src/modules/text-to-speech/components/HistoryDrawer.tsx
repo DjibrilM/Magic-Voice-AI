@@ -292,7 +292,7 @@ export function HistoryDrawer({
 
                           {/* Engine Badge */}
                           <span className="px-1.5 py-0.2 rounded text-[10px] bg-white/[0.04] text-zinc-400 border border-white/[0.04]">
-                            {item.engine === 'chatterbox' ? 'Chatterbox T3' : 'CosyVoice 3'}
+                            CosyVoice 3
                           </span>
 
                           {/* Duration */}

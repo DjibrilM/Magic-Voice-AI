@@ -30,7 +30,7 @@ import { saveCustomVoice } from '@/lib/services/voiceLoader'
 
 export interface VoiceCloneModalProps {
   isOpen: boolean
-  engine?: 'cosyvoice3' | 'chatterbox'
+  engine?: 'cosyvoice3'
   onSwitchToCosyVoice?: () => void
   cloneMode: 'upload' | 'record'
   isRecording: boolean
@@ -38,13 +38,16 @@ export interface VoiceCloneModalProps {
   isPlayingRecording: boolean
   cloneVoiceName: string
   recordedAudioUrl?: string | null
+  recordedStream?: MediaStream | null
+  micError?: string | null
+  onOpenMicrophoneSettings?: () => void
   onClose: () => void
   onSetCloneMode: (mode: 'upload' | 'record') => void
   onStartRecord: () => void
   onStopRecord: () => void
   onTogglePlayRecording: () => void
-  onStreamReady: (stream: MediaStream) => void
-  onStreamEnd: () => void
+  onStreamReady?: (stream: MediaStream) => void
+  onStreamEnd?: () => void
   onSaveVoice: (voice: Voice) => void
 }
 
@@ -58,6 +61,9 @@ export function VoiceCloneModal({
   isPlayingRecording,
   cloneVoiceName,
   recordedAudioUrl,
+  recordedStream,
+  micError,
+  onOpenMicrophoneSettings,
   onClose,
   onSetCloneMode,
   onStartRecord,
@@ -574,6 +580,7 @@ export function VoiceCloneModal({
                 >
                   <div className="w-full h-16 flex items-center justify-center px-4 overflow-hidden min-w-0">
                     <LiveWaveform
+                      stream={recordedStream}
                       active={isRecording}
                       barWidth={3}
                       barGap={1.5}
@@ -587,6 +594,26 @@ export function VoiceCloneModal({
                       className="w-full h-full text-zinc-300"
                     />
                   </div>
+
+                  {micError && (
+                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs w-full max-w-sm mx-auto">
+                      <div className="flex items-center gap-2 text-center font-medium">
+                        <AlertCircle className="size-4 text-white shrink-0" />
+                        <span>{micError}</span>
+                      </div>
+                      {onOpenMicrophoneSettings && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={onOpenMicrophoneSettings}
+                          className="h-7 px-3 mt-1 text-[11px] rounded-lg border-white/10 bg-white/10 hover:bg-white/15 text-white cursor-pointer"
+                        >
+                          Open System Settings
+                        </Button>
+                      )}
+                    </div>
+                  )}
 
                   {/* Record button and replay preview */}
                   <div className="flex items-center justify-center gap-3">

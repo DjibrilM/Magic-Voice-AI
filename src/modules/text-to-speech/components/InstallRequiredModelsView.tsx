@@ -2,12 +2,9 @@ import React, { useState } from 'react'
 import { Download, CheckCircle2 } from 'lucide-react'
 import { useModels } from '@/modules/models'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 
 export const InstallRequiredModelsView: React.FC = () => {
   const {
-    selectedEngine,
-    setSelectedEngine,
     activeEngineModels,
     totalSizeGb,
     allRequiredReady,
@@ -32,53 +29,19 @@ export const InstallRequiredModelsView: React.FC = () => {
   return (
     <div className="flex h-full w-full flex-1 items-center justify-center overflow-y-auto p-6">
       <div className="flex w-full max-w-xl flex-col gap-6">
-        <header className="space-y-2">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            Set up Voice Engine Models
-          </h1>
+        <header className="space-y-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              Set up CosyVoice 3 Models
+            </h1>
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-white/10 text-zinc-300 border border-white/10">
+              CosyVoice 3
+            </span>
+          </div>
 
           <p className="text-sm text-muted-foreground">
-            Choose your neural TTS engine based on your hardware and requirements.
+            Download the neural speech synthesis backbone, vocoder, and cloning models to run locally offline.
           </p>
-
-          {/* Engine Selector Segmented Tabs */}
-          <div className="grid grid-cols-2 gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setSelectedEngine('cosyvoice3')}
-              className={cn(
-                'flex flex-col items-start gap-1 p-3 rounded-xl border text-left transition-all cursor-pointer',
-                selectedEngine === 'cosyvoice3'
-                  ? 'border-white/30 bg-white/10 text-white shadow-sm'
-                  : 'border-[#27272a] bg-[#161619] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
-              )}
-            >
-              <div className="flex items-center gap-1.5 font-medium text-xs">
-                <span>CosyVoice 3</span>
-              </div>
-              <span className="text-[11px] text-zinc-400 leading-tight">
-                M-Series Mac & Voice Cloning (4 models)
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedEngine('chatterbox')}
-              className={cn(
-                'flex flex-col items-start gap-1 p-3 rounded-xl border text-left transition-all cursor-pointer',
-                selectedEngine === 'chatterbox'
-                  ? 'border-white/30 bg-white/10 text-white shadow-sm'
-                  : 'border-[#27272a] bg-[#161619] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
-              )}
-            >
-              <div className="flex items-center gap-1.5 font-medium text-xs">
-                <span>Chatterbox T3 Turbo</span>
-              </div>
-              <span className="text-[11px] text-zinc-400 leading-tight">
-                GGUF Speech & Voice Cloning (2 models)
-              </span>
-            </button>
-          </div>
         </header>
 
         <div className="space-y-2">

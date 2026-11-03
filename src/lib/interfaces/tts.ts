@@ -2,7 +2,7 @@ import { Voice, SpeechRound, Generation, HistoryEntry, ParlerSpeaker } from './v
 
 export interface TextToSpeechState {
   // Voice engine
-  engine?: 'cosyvoice3' | 'chatterbox'
+  engine?: 'cosyvoice3'
   parlerSpeakers?: ParlerSpeaker[]
   selectedParlerSpeakerId?: string
 

@@ -31,7 +31,7 @@ export async function getModelStatus(
 }
 
 /**
- * Downloads a voice engine neural model or all required models via IPC ('models:download')
+ * Downloads a voice engine model or all required models via IPC ('models:download')
  */
 export async function downloadModel(
   payload: ModelDownloadOptions,
@@ -134,7 +134,7 @@ export async function getModelInfo(
 }
 
 /**
- * Subscribes to neural model download progress events
+ * Subscribes to model download progress events
  */
 export function onModelDownloadProgress(
   callback: (payload: ModelDownloadProgressPayload) => void,

@@ -11,12 +11,17 @@
     "dist-electron"
   ],
   "mac": {
+    "icon": "build/icon.icns",
     "target": [
       "dmg"
     ],
-    "artifactName": "${productName}-Mac-${version}-Installer.${ext}"
+    "artifactName": "${productName}-Mac-${version}-Installer.${ext}",
+    "extendInfo": {
+      "NSMicrophoneUsageDescription": "Magic-Voice AI requires access to your microphone to record voice samples for custom voice cloning."
+    }
   },
   "win": {
+    "icon": "build/icon.ico",
     "target": [
       {
         "target": "nsis",
@@ -34,6 +39,7 @@
     "deleteAppDataOnUninstall": false
   },
   "linux": {
+    "icon": "build/icon.png",
     "target": [
       "AppImage"
     ],

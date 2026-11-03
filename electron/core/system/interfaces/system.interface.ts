@@ -31,6 +31,8 @@ export interface ModelStorageItem {
   engine?: string
 }
 
+export type InferenceDeviceType = 'gpu' | 'cpu'
+
 export interface StorageInfoResult {
   success: boolean
   modelsStorageBytes: number
@@ -40,7 +42,22 @@ export interface StorageInfoResult {
   totalStorageBytes: number
   totalStorageFormatted: string
   mediaDestinationFolder: string
+  mediaFilesCount?: number
+  inferenceDevice?: InferenceDeviceType
   models: ModelStorageItem[]
+  error?: string
+}
+
+export interface InferenceDeviceResult {
+  success: boolean
+  device: InferenceDeviceType
+  error?: string
+}
+
+export interface MicrophonePermissionResult {
+  success: boolean
+  granted: boolean
+  status: 'not-determined' | 'granted' | 'denied' | 'restricted' | 'unknown'
   error?: string
 }
 

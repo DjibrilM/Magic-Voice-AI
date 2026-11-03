@@ -3,7 +3,7 @@ import { atomWithStorage } from 'jotai/utils'
 import { TextToSpeechState, SpeechRound, Generation, HistoryEntry, Voice, ParlerSpeaker } from '../types'
 
 export interface PersistedTtsState {
-  engine: 'cosyvoice3' | 'chatterbox'
+  engine: 'cosyvoice3'
   parlerSpeakers?: ParlerSpeaker[]
   selectedParlerSpeakerId?: string
   language: string
@@ -82,8 +82,7 @@ export function cleanHistory(history?: HistoryEntry[] | null): HistoryEntry[] {
   return history.filter(
     (item) =>
       !isLegacyPlaceholderText(item.text) &&
-      item.model !== 'Chatterbox T3 Turbo' &&
-      item.model !== 'Chatterbox Expressive'
+      (item.model === 'CosyVoice 3' || item.engine === 'cosyvoice3')
   )
 }
 
