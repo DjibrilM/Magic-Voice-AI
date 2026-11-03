@@ -1,5 +1,5 @@
 import "./init-env";
-import { app, BrowserWindow, protocol, session, systemPreferences } from "electron";
+import { app, BrowserWindow, nativeImage, protocol, session, systemPreferences } from "electron";
 import { fileURLToPath } from "node:url";
 import { Readable } from "node:stream";
 import path from "node:path";
@@ -31,17 +31,33 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   ? path.join(process.env.APP_ROOT, "public")
   : RENDERER_DIST;
 
+app.setName("Magic-Voice AI");
+
+function resolveAppIconPath(): string {
+  const candidates = [
+    path.join(process.env.VITE_PUBLIC, process.platform === "win32" ? "favicon.ico" : "icon.png"),
+    path.join(process.env.VITE_PUBLIC, "icon-512.png"),
+    path.join(process.env.APP_ROOT, "build", "icon.png"),
+    path.join(process.env.APP_ROOT, "icon.png"),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return candidates[0];
+}
+
 // Bootstrap all modular core services & controllers with dependency injection
 export const core = bootstrapCore();
 
 let win: BrowserWindow | null = null;
 
 function createWindow() {
+  const iconPath = resolveAppIconPath();
   win = new BrowserWindow({
-    icon: path.join(
-      process.env.VITE_PUBLIC,
-      process.platform === "win32" ? "favicon.ico" : "icon-512.png"
-    ),
+    title: "Magic-Voice AI",
+    icon: iconPath,
     trafficLightPosition: { x: 14, y: 12 },
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs"),
@@ -90,6 +106,14 @@ app.on("activate", () => {
 });
 
 app.whenReady().then(() => {
+  if (process.platform === "darwin" && app.dock) {
+    const iconPath = resolveAppIconPath();
+    const dockIcon = nativeImage.createFromPath(iconPath);
+    if (!dockIcon.isEmpty()) {
+      app.dock.setIcon(dockIcon);
+    }
+  }
+
   // Explicitly grant media (microphone/audio) permissions in Chromium session
   session.defaultSession.setPermissionRequestHandler(async (_webContents, permission, callback) => {
     if (permission === "media") {

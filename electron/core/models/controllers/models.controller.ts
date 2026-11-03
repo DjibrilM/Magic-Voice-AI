@@ -40,10 +40,14 @@ export class ModelsController extends BaseController {
         if (payload?.allRequired) {
           const status = this.modelsService.getStatus(payload?.engine)
           const required = status.models.filter((m) => m.required && !m.downloaded)
-          for (const m of required) {
-            await this.modelsService.downloadModel(m.id, onProgress)
+          const results = await Promise.all(
+            required.map((m) => this.modelsService.downloadModel(m.id, onProgress))
+          )
+          const allSucceeded = results.every((r) => r.success)
+          return {
+            success: allSucceeded,
+            data: this.modelsService.getStatus(payload?.engine),
           }
-          return { success: true, data: this.modelsService.getStatus(payload?.engine) }
         }
 
         if (payload?.modelId) {

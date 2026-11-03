@@ -31,11 +31,6 @@ export function AppSidebar({ isOpen = true }: { isOpen?: boolean }) {
           to="/"
           className="flex items-center gap-2.5 px-2 text-white hover:opacity-90 transition-opacity"
         >
-          <img
-            src="/icon-256.png"
-            alt="Magic-Voice AI"
-            className="size-6 object-contain shrink-0"
-          />
           <span className="text-[14px] font-semibold tracking-tight text-white">Magic-Voice AI</span>
         </Link>
       </div>
