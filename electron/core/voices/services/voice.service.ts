@@ -58,9 +58,11 @@ export class VoiceService {
     const candidates = [
       ...(resourcesPath
         ? [
+            path.join(resourcesPath, 'voices'),
+            path.join(resourcesPath, 'app', 'dist', 'voices'),
+            path.join(resourcesPath, 'app', 'public', 'voices'),
             path.join(resourcesPath, 'app.asar.unpacked', 'voices'),
             path.join(resourcesPath, 'app.asar.unpacked', 'dist', 'voices'),
-            path.join(resourcesPath, 'voices'),
           ]
         : []),
       ...(userDataVoices ? [userDataVoices] : []),
