@@ -58,6 +58,8 @@ function createWindow() {
   win = new BrowserWindow({
     title: "Magic-Voice AI",
     icon: iconPath,
+    minHeight: 900,
+    minWidth: 1500,
     trafficLightPosition: { x: 14, y: 12 },
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs"),

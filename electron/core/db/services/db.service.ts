@@ -5,9 +5,36 @@ import { app } from 'electron'
 import type { PrismaClient as PrismaClientType } from '@prisma/client'
 
 const require = createRequire(import.meta.url)
-const { PrismaClient } = require('@prisma/client') as {
-  PrismaClient: typeof PrismaClientType
+
+function loadPrismaClientClass(): typeof PrismaClientType {
+  const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath
+  const candidates = [
+    ...(resourcesPath
+      ? [
+          path.resolve(
+            resourcesPath,
+            'app.asar.unpacked/node_modules/.prisma/client/index.js'
+          ),
+          path.resolve(resourcesPath, 'node_modules/.prisma/client/index.js'),
+        ]
+      : []),
+    path.resolve(process.cwd(), 'node_modules/.prisma/client/index.js'),
+  ]
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      const mod = require(candidate) as { PrismaClient: typeof PrismaClientType }
+      if (mod?.PrismaClient) {
+        return mod.PrismaClient
+      }
+    }
+  }
+
+  const fallback = require('@prisma/client') as { PrismaClient: typeof PrismaClientType }
+  return fallback.PrismaClient
 }
+
+const PrismaClient = loadPrismaClientClass()
 
 export interface ActivityModelDelegate {
   findMany(args?: {

@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "prisma generate && vite",
-    "build": "prisma generate && tsc && vite build && electron-builder",
+    "build": "prisma generate && tsc && vite build",
+    "build:mac": "npm run build && electron-builder --mac",
+    "build:dmg": "npm run build && electron-builder --mac dmg --arm64 --x64",
+    "build:win": "npm run build && electron-builder --win nsis",
+    "build:all": "npm run build && electron-builder -mw",
     "postinstall": "prisma generate",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
