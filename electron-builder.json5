@@ -2,23 +2,51 @@
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.magicvoice.ai",
   "asar": true,
-  "productName": "Magic-Voice ai",
+  "productName": "Magic-Voice AI",
   "directories": {
+    "buildResources": "build",
     "output": "release/${version}"
   },
   "files": [
     "dist",
-    "dist-electron"
+    "dist-electron",
+    "node_modules/.prisma/**/*"
   ],
+  "asarUnpack": [
+    "node_modules/@qvac/**/*",
+    "node_modules/bare-*/**/*",
+    "node_modules/@prisma/**/*",
+    "node_modules/.prisma/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "node_modules/.prisma",
+      "to": "app.asar.unpacked/node_modules/.prisma",
+      "filter": [
+        "**/*"
+      ]
+    }
+  ],
+  "npmRebuild": false,
   "mac": {
     "icon": "build/icon.icns",
+    "category": "public.app-category.music",
     "target": [
-      "dmg"
+      {
+        "target": "dmg",
+        "arch": [
+          "arm64",
+          "x64"
+        ]
+      }
     ],
-    "artifactName": "${productName}-Mac-${version}-Installer.${ext}",
+    "artifactName": "${productName}-Mac-${version}-${arch}-Installer.${ext}",
     "extendInfo": {
       "NSMicrophoneUsageDescription": "Magic-Voice AI requires access to your microphone to record voice samples for custom voice cloning."
     }
+  },
+  "dmg": {
+    "sign": false
   },
   "win": {
     "icon": "build/icon.ico",
@@ -30,19 +58,22 @@
         ]
       }
     ],
-    "artifactName": "${productName}-Windows-${version}-Setup.${ext}"
+    "artifactName": "${productName}-Windows-${version}-${arch}-Setup.${ext}"
   },
   "nsis": {
     "oneClick": false,
     "perMachine": false,
     "allowToChangeInstallationDirectory": true,
-    "deleteAppDataOnUninstall": false
+    "deleteAppDataOnUninstall": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Magic-Voice AI"
   },
   "linux": {
     "icon": "build/icon.png",
     "target": [
       "AppImage"
     ],
-    "artifactName": "${productName}-Linux-${version}.${ext}"
+    "artifactName": "${productName}-Linux-${version}-${arch}.${ext}"
   }
 }
