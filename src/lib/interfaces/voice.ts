@@ -1,5 +1,6 @@
 export type QvacEmotion =
   | 'Neutral'
+  | 'Warm'
   | 'Happy'
   | 'Sad'
   | 'Anger'
@@ -13,6 +14,16 @@ export type QvacEmotion =
   | 'Proper Noun'
 
 export type QvacPace = 'Slow' | 'Moderate' | 'Fast'
+
+export type QvacSpeakingTone =
+  | 'Natural'
+  | 'Warm & Smiling'
+  | 'Conversational'
+  | 'Storyteller'
+  | 'Soft & Hushed'
+  | 'Projecting & Loud'
+  | 'Empathetic'
+  | 'Broadcast'
 
 export interface Voice {
   id: string
@@ -65,6 +76,8 @@ export interface SpeechRound {
   speed: number // WSOLA multiplier for this round (0.5 to 2.0)
   emotion?: QvacEmotion
   pace?: QvacPace
+  speakingTone?: QvacSpeakingTone
+  dialect?: string
   prompt?: string
   description?: string
   referenceAudioSrc?: string

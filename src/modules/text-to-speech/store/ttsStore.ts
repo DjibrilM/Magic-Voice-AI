@@ -22,7 +22,6 @@ export interface PersistedTtsState {
   lavaSrEnabled: boolean
   volume: number
   isMuted: boolean
-  rightPanelTab: 'settings' | 'history'
   history: HistoryEntry[]
 }
 
@@ -113,7 +112,6 @@ const defaultPersistedState: PersistedTtsState = {
   lavaSrEnabled: true,
   volume: 0.85,
   isMuted: false,
-  rightPanelTab: 'settings',
   history: [],
 }
 
@@ -305,7 +303,6 @@ export const ttsCompositeStateAtom = atom<TextToSpeechState, [Partial<TextToSpee
       'lavaSrEnabled',
       'volume',
       'isMuted',
-      'rightPanelTab',
       'history',
     ]
 

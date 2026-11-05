@@ -4,6 +4,7 @@ import {
   GripVertical,
   Smile,
   Gauge,
+  Mic,
   Trash2,
   ChevronDown,
   Check,
@@ -22,7 +23,9 @@ import {
   Voice,
   QvacEmotion,
   QvacPace,
+  QvacSpeakingTone,
   COSYVOICE_EMOTIONS,
+  COSYVOICE_SPEAKING_TONES,
   PARLER_EMOTIONS,
   QVAC_PACES,
   QVAC_PAUSES,
@@ -145,20 +148,18 @@ export function DialogueRoundCard({
       let newText = ''
       let cursorTarget = start
 
-      const isReactionCue = ['[hmm]'].includes(openTag)
-
       if (closeTag && hasSelection) {
-        // Wraps highlighted text cleanly: e.g. [whisper]selected text[/whisper]
+        // Wraps highlighted text cleanly: e.g. [smile]selected text[/smile] or [whisper]selected text[/whisper]
         const wrapped = `${openTag}${selectedText}${closeTag}`
         newText = raw.substring(0, start) + wrapped + raw.substring(end)
         cursorTarget = start + wrapped.length
-      } else if (closeTag && !isReactionCue) {
-        // Tone wrapper with no selection: inserts [whisper][/whisper] and places cursor inside: [whisper]|[/whisper]
+      } else if (closeTag) {
+        // Tone wrapper with no selection: inserts [smile][/smile] and places cursor inside: [smile]|[/smile]
         const insertion = `${openTag}${closeTag}`
         newText = raw.substring(0, start) + insertion + raw.substring(end)
         cursorTarget = start + openTag.length
       } else {
-        // Single cue like [hmm] or [pause 0.5s]
+        // Single cue like [smile], [laugh], [breath], [sigh], [gasp], [hmm], or [pause 0.5s]
         const before = raw.substring(0, start)
         const after = raw.substring(end)
         const prefix = before.length > 0 && !/\s$/.test(before) ? ' ' : ''
@@ -342,12 +343,12 @@ export function DialogueRoundCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="w-60 bg-[#18181b] border-[#27272a] text-zinc-200 p-1.5 shadow-2xl"
+              className="w-64 bg-[#18181b] border-[#27272a] text-zinc-200 p-1.5 shadow-2xl"
             >
               <div className="flex items-center justify-between px-2 py-1.5 text-[11px] font-medium text-zinc-400 border-b border-[#27272a] mb-1">
                 <span>Voice Emotion</span>
                 <span className="text-[9px] text-zinc-500 font-mono">
-                  CosyVoice 3 (4)
+                  CosyVoice 3 ({activeEmotions.length})
                 </span>
               </div>
               {activeEmotions.map((e) => (
@@ -369,6 +370,63 @@ export function DialogueRoundCard({
                     <div className="text-[10px] text-zinc-500">{e.description}</div>
                   </div>
                   {(round.emotion || 'Neutral') === e.label && (
+                    <Check className="size-3.5 text-white shrink-0 ml-2" />
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* CosyVoice 3 Speaking Tone Selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onClick={onFocus}
+                className="flex items-center gap-1.5 rounded-lg bg-[#18181b] hover:bg-[#202024] border border-[#27272a] hover:border-zinc-600 px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer"
+              >
+                <Mic className="size-3.5 text-zinc-400 shrink-0" />
+                <span className="text-zinc-500 font-normal">Tone:</span>
+                <span className="font-semibold text-white">{round.speakingTone || 'Natural'}</span>
+                <ChevronDown className="size-3 text-zinc-500 shrink-0 ml-0.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="w-72 bg-[#18181b] border-[#27272a] text-zinc-200 p-1.5 shadow-2xl"
+            >
+              <div className="flex items-center justify-between px-2 py-1.5 text-[11px] font-medium text-zinc-400 border-b border-[#27272a] mb-1">
+                <span>Speaking Tone & Delivery</span>
+                <span className="text-[9px] text-zinc-500 font-mono">
+                  CosyVoice 3 Dialect
+                </span>
+              </div>
+              {COSYVOICE_SPEAKING_TONES.map((t) => (
+                <DropdownMenuItem
+                  key={t.label}
+                  onClick={() => {
+                    onFocus()
+                    onUpdateRound({ speakingTone: t.label as QvacSpeakingTone })
+                  }}
+                  className={cn(
+                    'flex items-center justify-between px-2.5 py-2 rounded-lg cursor-pointer text-xs',
+                    (round.speakingTone || 'Natural') === t.label
+                      ? 'bg-white/10 text-white font-medium'
+                      : 'hover:bg-white/5 text-zinc-300'
+                  )}
+                >
+                  <div className="pr-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium">{t.label}</span>
+                      {t.badge && (
+                        <span className="rounded bg-white/[0.06] border border-white/10 px-1.5 py-0.2 text-[9px] font-mono text-zinc-400">
+                          {t.badge}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-zinc-500">{t.description}</div>
+                  </div>
+                  {(round.speakingTone || 'Natural') === t.label && (
                     <Check className="size-3.5 text-white shrink-0 ml-2" />
                   )}
                 </DropdownMenuItem>
@@ -472,6 +530,7 @@ export function DialogueRoundCard({
               <button
                 key={item.tag}
                 type="button"
+                title={item.description}
                 onClick={(e) => {
                   e.stopPropagation()
                   insertTagAtCursor(item.tag)

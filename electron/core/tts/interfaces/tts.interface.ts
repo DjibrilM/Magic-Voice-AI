@@ -5,6 +5,8 @@ export interface TtsSpeechRound {
   speed?: number
   emotion?: string
   pace?: string
+  speakingTone?: string
+  dialect?: string
   prompt?: string
   description?: string
   referenceAudioSrc?: string

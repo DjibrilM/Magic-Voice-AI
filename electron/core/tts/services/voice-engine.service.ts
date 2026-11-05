@@ -143,7 +143,7 @@ interface TextOrPauseSegment {
   type: "speech" | "pause";
   text?: string;
   pauseSec?: number;
-  tone?: "normal" | "whisper" | "yell" | "raise";
+  tone?: "normal" | "whisper" | "yell" | "raise" | "smile" | "laugh";
 }
 
 /**
@@ -269,100 +269,637 @@ function crossfadeAppend(
 interface ProcessedSpeechResult {
   cleanedText: string;
   detectedCues: string[];
-  tone: "normal" | "whisper" | "yell" | "raise";
+  tone: "normal" | "whisper" | "yell" | "raise" | "smile" | "laugh";
+}
+
+export type CosyVoiceInstructOption =
+  | string
+  | {
+      dialect?: string;
+      volume?: "loud" | "soft";
+      style?: "peppa" | "robot";
+    };
+
+const VALID_COSYVOICE_DIALECTS = new Set([
+  "cantonese",
+  "northeastern",
+  "gansu",
+  "guizhou",
+  "henan",
+  "hubei",
+  "hunan",
+  "jiangxi",
+  "minnan",
+  "ningxia",
+  "shanxi",
+  "shaanxi",
+  "shandong",
+  "shanghai",
+  "sichuan",
+  "tianjin",
+  "yunnan",
+]);
+
+/**
+ * Maps speaking tones, reaction cues, and extended emotions to Fun-CosyVoice3-0.5B's
+ * native instruction format (`You are a helpful assistant. 请用...说一句话。<|endofprompt|>`).
+ *
+ * Inside `qvac-tts.cpp` (`cosyvoice_pipeline.cpp`), all built-in CosyVoice 3 instructions use
+ * pure Chinese sentences of the form `"请用...说一句话。"`. Passing clean Chinese instructions
+ * before `<|endofprompt|>` steers prosody across all 9 spoken languages without leaking
+ * instruction words into the synthesized English/multilingual audio.
+ */
+const COSYVOICE_TONE_INSTRUCT_MAP: Record<string, CosyVoiceInstructOption> = {
+  // Speaking Tones & Cue Styles
+  // "Please speak a sentence with a smiling face and a gentle, affectionate tone."
+  "warm & smiling": "请用面带微笑、温柔亲切的语气说一句话。",
+  warm: "请用面带微笑、温柔亲切的语气说一句话。",
+  smiling: "请用面带微笑、温柔亲切的语气说一句话。",
+  smile: "请用面带微笑、温柔亲切的语气说一句话。",
+
+  // "Please speak a sentence in a burst of happy laughter, unable to hold back a laugh while speaking."
+  laugh: "请用开心大笑、忍俊不禁、边笑边说的语气说一句话。",
+  laughing: "请用开心大笑、忍俊不禁、边笑边说的语气说一句话。",
+
+  // "Please speak a sentence with heightened vocal stress and clear emphasis on key points."
+  raise: "请用加重语气、清晰强调重点的语调说一句话。",
+  emphasis: "请用加重语气、清晰强调重点的语调说一句话。",
+
+  // "Please let out a gentle sigh and speak a sentence in a soft, reflective tone."
+  sigh: "请轻轻叹一口气，用柔和感慨的语气说一句话。",
+
+  // "Please speak a sentence with a surprised gasp and astonished tone."
+  gasp: "请用惊讶、倒吸一口气的语气说一句话。",
+
+  // "Please speak a sentence in a calm, engaging, and expressive storytelling narration tone."
+  storyteller: "请用沉稳、娓娓道来、富有感染力的旁白叙事语气说一句话。",
+  narration: "请用沉稳、娓娓道来、富有感染力的旁白叙事语气说一句话。",
+
+  // "Please speak a sentence in a gentle, considerate, empathetic, and comforting tone."
+  empathetic: "请用温柔、体贴、充满共情与安慰的语气说一句话。",
+
+  // Native QVAC soft-volume instruction ("请用尽可能小声地悄悄说一句话。" -> "Please whisper a sentence as softly as possible.")
+  "soft & hushed": { volume: "soft" },
+  whisper: { volume: "soft" },
+  soft: { volume: "soft" },
+
+  // Native QVAC loud-volume instruction ("请尽可能非常大声地说一句话。" -> "Please speak a sentence as loudly as possible.")
+  "projecting & loud": { volume: "loud" },
+  loud: { volume: "loud" },
+  yell: { volume: "loud" },
+
+  // "Please speak a sentence in a clear, composed, professional podcast and news broadcast host tone."
+  broadcast: "请用清晰、沉稳、专业的播客与新闻主持语气说一句话。",
+  news: "请用清晰、沉稳、专业的播客与新闻主持语气说一句话。",
+
+  // Extended Emotions
+  // "Please speak a sentence in a firm, authoritative, and decisive commanding tone."
+  command: "请用坚定、威严、果断的命令语气说一句话。",
+
+  // "Please speak a sentence in a tone full of surprise and pleasant amazement."
+  surprise: "请用充满惊讶和惊喜的语气说一句话。",
+
+  // "Please speak a sentence in a tense, fearful, and slightly trembling voice."
+  fear: "请用紧张、害怕、声音微颤的语气说一句话。",
+
+  // "Please speak a sentence in a disdainful and displeased tone."
+  disgust: "请用嫌弃、不满的语气说一句话。",
+
+  // "Please speak a sentence with crisp, clear articulation and precise enunciation."
+  "proper noun": "请用吐字清晰、字正腔圆的语气说一句话。",
+};
+
+/**
+ * Translates English UI preset prompts and free-form English descriptions into
+ * CosyVoice 3's native trained instruction vocabulary (`"请用...说一句话。"`) so
+ * English prompts written by the user reliably steer the model's prosody.
+ */
+function normalizeCustomVoicePrompt(prompt: string): CosyVoiceInstructOption {
+  const trimmed = prompt.trim();
+  const lower = trimmed.toLowerCase();
+
+  // If the user already wrote a Chinese instruction (e.g. "请用..."), pass it through directly
+  if (/[\u4e00-\u9fff]/.test(trimmed)) {
+    return trimmed;
+  }
+
+  // Volume / Whisper / Loud
+  if (
+    lower.includes("very soft voice") ||
+    lower.includes("whisper") ||
+    lower.includes("hushed") ||
+    lower.includes("quietly") ||
+    lower === "soft"
+  ) {
+    return { volume: "soft" };
+  }
+  if (
+    lower.includes("loudly as possible") ||
+    lower.includes("shout") ||
+    lower.includes("yell") ||
+    lower.includes("projecting") ||
+    lower === "loud"
+  ) {
+    return { volume: "loud" };
+  }
+
+  // Robot / Style
+  if (lower.includes("robot") || lower.includes("robotic") || lower.includes("mechanical")) {
+    return { style: "robot" };
+  }
+
+  // Laughing / Chuckling / Amused
+  if (
+    lower.includes("laugh") ||
+    lower.includes("chuckl") ||
+    lower.includes("giggl") ||
+    lower.includes("amused")
+  ) {
+    return COSYVOICE_TONE_INSTRUCT_MAP.laugh;
+  }
+
+  // Smiling / Warm / Friendly
+  if (
+    lower.includes("smile") ||
+    lower.includes("smiling") ||
+    lower.includes("warm") ||
+    lower.includes("friendly") ||
+    lower.includes("approachable")
+  ) {
+    return COSYVOICE_TONE_INSTRUCT_MAP["warm & smiling"];
+  }
+
+  // Sad / Emotional Tears / Melancholic
+  if (
+    lower.includes("sad") ||
+    lower.includes("tear") ||
+    lower.includes("cry") ||
+    lower.includes("heartbroken") ||
+    lower.includes("somber") ||
+    lower.includes("melanchol") ||
+    lower.includes("grief")
+  ) {
+    // "Please speak a sentence in as sad and heartbroken a tone as possible."
+    return "请用尽可能伤心、难过的语气说一句话。";
+  }
+
+  // Angry / Furious / Intense
+  if (
+    lower.includes("angr") ||
+    lower.includes("anger") ||
+    lower.includes("furious") ||
+    lower.includes("mad") ||
+    lower.includes("outrage")
+  ) {
+    // "Please speak a sentence in as angry and furious a tone as possible."
+    return "请用尽可能生气、愤怒的语气说一句话。";
+  }
+
+  // Happy / Joyful / Excited / Upbeat
+  if (
+    lower.includes("happy") ||
+    lower.includes("joy") ||
+    lower.includes("excit") ||
+    lower.includes("cheerful") ||
+    lower.includes("upbeat") ||
+    lower.includes("enthusias")
+  ) {
+    // "Please speak a sentence in as happy and excited a tone as possible."
+    return "请用尽可能开心、兴奋的语气说一句话。";
+  }
+
+  // Fear / Nervous / Scared / Trembling
+  if (
+    lower.includes("fear") ||
+    lower.includes("scared") ||
+    lower.includes("nervous") ||
+    lower.includes("trembl") ||
+    lower.includes("anxious") ||
+    lower.includes("terrified")
+  ) {
+    return COSYVOICE_TONE_INSTRUCT_MAP.fear;
+  }
+
+  // Surprise / Amazed / Shocked
+  if (
+    lower.includes("surpris") ||
+    lower.includes("amaz") ||
+    lower.includes("shock") ||
+    lower.includes("astonish")
+  ) {
+    return COSYVOICE_TONE_INSTRUCT_MAP.surprise;
+  }
+
+  // Authoritative / Commanding / Firm
+  if (
+    lower.includes("authorit") ||
+    lower.includes("command") ||
+    lower.includes("firm") ||
+    lower.includes("strict") ||
+    lower.includes("decisive")
+  ) {
+    return COSYVOICE_TONE_INSTRUCT_MAP.command;
+  }
+
+  // Empathetic / Caring / Reassuring / Gentle
+  if (
+    lower.includes("empathet") ||
+    lower.includes("caring") ||
+    lower.includes("reassur") ||
+    lower.includes("comfort") ||
+    lower.includes("gentle") ||
+    lower.includes("kind")
+  ) {
+    return COSYVOICE_TONE_INSTRUCT_MAP.empathetic;
+  }
+
+  // Storyteller / Narrator / Audiobook / Calm
+  if (
+    lower.includes("storytell") ||
+    lower.includes("narrat") ||
+    lower.includes("audiobook") ||
+    lower.includes("calm")
+  ) {
+    return COSYVOICE_TONE_INSTRUCT_MAP.storyteller;
+  }
+
+  // Podcast / Broadcast / News / Host
+  if (
+    lower.includes("podcast") ||
+    lower.includes("broadcast") ||
+    lower.includes("news") ||
+    lower.includes("anchor") ||
+    lower.includes("host")
+  ) {
+    return COSYVOICE_TONE_INSTRUCT_MAP.broadcast;
+  }
+
+  // Sigh / Reflective
+  if (lower.includes("sigh") || lower.includes("wistful") || lower.includes("reflective")) {
+    return COSYVOICE_TONE_INSTRUCT_MAP.sigh;
+  }
+
+  // Fast / Slow pacing in prompt
+  if (lower.includes("fast") || lower.includes("quick") || lower.includes("rapid") || lower.includes("urgent")) {
+    return "请用尽可能快地语速说一句话。";
+  }
+  if (lower.includes("slow") || lower.includes("deliberate") || lower.includes("unhurried")) {
+    return "请用尽可能慢地语速说一句话。";
+  }
+
+  return trimmed;
+}
+
+interface ResolvedCosyVoiceConditioning {
+  loadInstruct?: CosyVoiceInstructOption;
+  perCallEmotion?: "anger" | "happy" | "sad";
+  perCallPace?: "slow" | "fast";
+  conditioningLabel: string;
 }
 
 /**
- * Preprocesses conversational reaction cues ([laugh], [chuckle], [hmm], [sigh])
- * and pointed tone manipulation tags ([whisper], [yell], [raise]).
+ * Resolves the single non-conflicting conditioning control for a CosyVoice 3 synthesis call.
  *
- * For CosyVoice 3:
- * Translates cues to native FunAudioLLM instruct tags (<laughter>, <strong>, <breath>)
- * as specified in FunAudioLLM/CosyVoice #191, which work both in zero-shot base mode
- * and with custom cloned voices.
+ * CosyVoice 3 enforces a strict one-instruction-per-synthesis rule (`assertSingleCosyvoiceControl`):
+ * - Setting `emotion: "neutral"` engages the flat instruct path ("请用正常平淡的语气说一句话。")
+ *   and drops the reference voice's speech tokens (`promptSpeechTokens = 0`).
+ * - Omitting `emotion`, `pace`, and `instruct` preserves the reference voice's speech tokens
+ *   (`promptSpeechTokens > 0`) for maximum zero-shot naturalness and prosodic fidelity.
+ */
+function resolveCosyVoiceConditioning(params: {
+  segTone?: "normal" | "whisper" | "yell" | "raise" | "smile" | "laugh";
+  detectedCues?: string[];
+  speakingTone?: string;
+  emotion?: string;
+  pace?: string;
+  dialect?: string;
+  customPrompt?: string;
+}): ResolvedCosyVoiceConditioning {
+  const segTone = params.segTone || "normal";
+  const cues = params.detectedCues || [];
+  const rawTone = (params.speakingTone || "").trim().toLowerCase();
+  const rawEmotion = (params.emotion || "").trim().toLowerCase();
+  const rawPace = (params.pace || "").trim().toLowerCase();
+  const rawDialect = (params.dialect || "").trim().toLowerCase();
+  const customPrompt = (params.customPrompt || "").trim();
+
+  // 1. Pointed segment-level acoustic volume overrides (whisper / loud)
+  // Note: Inline paralinguistic cues ([laugh], [laughter], [chuckle], [smile], [sigh],
+  // [breath], [gasp], [cough], [raise]) are realized directly via CosyVoice 3's trained
+  // paralinguistic token embeddings (IDs 151647..151662) in true zero-shot mode
+  // (`promptSpeechTokens > 0` with `promptText`). Setting `loadInstruct` for those cues
+  // would switch `qvac-tts.cpp` to `build_lm_prompt_instruct` (`promptSpeechTokens = 0`),
+  // suppressing the acoustic paralinguistic tokens.
+  if (segTone === "whisper" || cues.includes("whisper")) {
+    return {
+      loadInstruct: { volume: "soft" },
+      conditioningLabel: "instruct:volume=soft",
+    };
+  }
+  if (segTone === "yell" || cues.includes("yell")) {
+    return {
+      loadInstruct: { volume: "loud" },
+      conditioningLabel: "instruct:volume=loud",
+    };
+  }
+
+  // 2. Explicit user-written Voice Prompt (Instruction)
+  if (customPrompt.length > 0) {
+    const normalizedPrompt = normalizeCustomVoicePrompt(customPrompt);
+    return {
+      loadInstruct: normalizedPrompt,
+      conditioningLabel: `instruct:custom(${customPrompt.slice(0, 32)})`,
+    };
+  }
+
+  // 3. Explicit CosyVoice 3 regional dialect
+  if (rawDialect && VALID_COSYVOICE_DIALECTS.has(rawDialect)) {
+    return {
+      loadInstruct: { dialect: rawDialect },
+      conditioningLabel: `instruct:dialect=${rawDialect}`,
+    };
+  }
+
+  // 4. Explicit Speaking Tone selection (when not 'natural' or 'conversational')
+  if (rawTone && rawTone !== "natural" && rawTone !== "conversational") {
+    const mappedToneInstruct = COSYVOICE_TONE_INSTRUCT_MAP[rawTone];
+    if (mappedToneInstruct) {
+      return {
+        loadInstruct: mappedToneInstruct,
+        conditioningLabel: `tone:${rawTone}`,
+      };
+    }
+  }
+
+  // 5. Emotion selection
+  // Note: 'neutral' and 'conversation' intentionally stay on the unconditioned zero-shot path
+  // so CosyVoice 3 keeps the reference audio's speech tokens (`promptSpeechTokens > 0`).
+  if (rawEmotion && rawEmotion !== "neutral" && rawEmotion !== "conversation") {
+    if (rawEmotion === "happy" || rawEmotion === "sad" || rawEmotion === "anger") {
+      return {
+        perCallEmotion: rawEmotion,
+        conditioningLabel: `emotion:${rawEmotion}`,
+      };
+    }
+    const mappedEmotionInstruct = COSYVOICE_TONE_INSTRUCT_MAP[rawEmotion];
+    if (mappedEmotionInstruct) {
+      return {
+        loadInstruct: mappedEmotionInstruct,
+        conditioningLabel: `emotion-instruct:${rawEmotion}`,
+      };
+    }
+  }
+
+  // 6. Pace selection ('slow' or 'fast'; 'moderate' disengages pace channel)
+  if (rawPace === "slow" || rawPace === "fast") {
+    return {
+      perCallPace: rawPace,
+      conditioningLabel: `pace:${rawPace}`,
+    };
+  }
+
+  // 7. Default: True Zero-Shot Path (retains promptSpeechTokens for maximum naturalness)
+  return {
+    conditioningLabel: "zero-shot-natural",
+  };
+}
+
+/**
+ * CosyVoice 3's 16 trained paralinguistic token embeddings in `cosyvoice3-llm-q8_0.gguf`
+ * (`lm/embed_tokens/weight` rows 151647..151662).
+ *
+ * Because `QwenTokenizer::load` in `qvac-tts.cpp` only registers 4 special tokens
+ * (`<|endoftext|>`, `<|im_start|>`, `<|im_end|>`, `<|endofprompt|>`), literal tags like
+ * `[laughter]` or `<laughter>` would be split on `[` / `<` by `QwenTokenizer::pretokenize`
+ * and spoken aloud as the English word `"laughter"`.
+ *
+ * By mapping Private Use Area codepoints `U+E000..U+E00F` in our augmented `vocab.json`
+ * and `merges.txt` (via GPT-2 byte-level BPE `"îĢ" + String.fromCodePoint(0x0122 + k)` and
+ * `"ĠîĢ" + String.fromCodePoint(0x0122 + k)` -> `151647 + k`), each PUA character encodes
+ * into the exact single paralinguistic token ID `151647..151662`!
+ */
+const COSYVOICE_PARALINGUISTIC_TOKENS = {
+  BREATH: "\uE000", // 151647: [breath]
+  STRONG_OPEN: "\uE001", // 151648: <strong>
+  STRONG_CLOSE: "\uE002", // 151649: </strong>
+  NOISE: "\uE003", // 151650: [noise]
+  LAUGHTER: "\uE004", // 151651: [laughter]
+  COUGH: "\uE005", // 151652: [cough]
+  CLUCKING: "\uE006", // 151653: [clucking]
+  ACCENT: "\uE007", // 151654: [accent]
+  QUICK_BREATH: "\uE008", // 151655: [quick_breath]
+  LAUGH_SPAN_OPEN: "\uE009", // 151656: <laughter>
+  LAUGH_SPAN_CLOSE: "\uE00A", // 151657: </laughter>
+  HISSING: "\uE00B", // 151658: [hissing]
+  SIGH: "\uE00C", // 151659: [sigh]
+  VOCALIZED_NOISE: "\uE00D", // 151660: [vocalized-noise]
+  LIPSMACK: "\uE00E", // 151661: [lipsmack]
+  MN: "\uE00F", // 151662: [mn]
+} as const;
+
+/**
+ * Preprocesses conversational reaction cues ([smile], [laugh], [chuckle], [hmm], [sigh], [breath], [gasp])
+ * and pointed tone manipulation tags ([whisper], [yell], [raise], [smile]...[/smile]) into
+ * CosyVoice 3's native paralinguistic token codepoints (`U+E000..U+E00F` -> token IDs `151647..151662`).
  */
 function processConversationalCues(
   text: string,
-  initialTone: "normal" | "whisper" | "yell" | "raise" = "normal"
+  initialTone: "normal" | "whisper" | "yell" | "raise" | "smile" | "laugh" = "normal"
 ): ProcessedSpeechResult {
   let cleaned = text;
   let tone = initialTone;
   const detectedCues: string[] = [];
+  const T = COSYVOICE_PARALINGUISTIC_TOKENS;
 
-  // Pointed tone detection
+  // 1. Pointed whisper / soft block
   if (tone === "whisper" || /\[(?:whisper|soft)\]/i.test(cleaned)) {
     tone = "whisper";
     detectedCues.push("whisper");
     cleaned = cleaned.replace(/\[\/?(?:whisper|soft)\]/gi, " ");
   }
 
+  // 2. Pointed yell / loud block
   if (tone === "yell" || /\[(?:yell|shout|loud)\]/i.test(cleaned)) {
     tone = "yell";
     detectedCues.push("yell");
     cleaned = cleaned.replace(/\[\/?(?:yell|shout|loud)\]/gi, " ");
-    const trimmed = cleaned.trim();
-    const ending = /[!?]$/.test(trimmed) ? "" : "!";
-    cleaned = `${trimmed.toUpperCase()}${ending}`;
   }
 
-  if (tone === "raise" || /\[(?:raise|emphasis)\]/i.test(cleaned) || /<\/?strong>/i.test(cleaned)) {
-    tone = "raise";
+  // 3. Smile spans & standalone [smile] cues:
+  // Wrap smiled phrases in <laughter>...</laughter> paralinguistic span tokens (\uE009 ... \uE00A)
+  // for warm, smiling vocal delivery without speaking any tag names aloud.
+  if (tone === "smile" || /\[\/?smile\]/i.test(cleaned)) {
+    if (tone === "normal") tone = "smile";
+    detectedCues.push("smile");
+    cleaned = cleaned.replace(
+      /\[smile\]([\s\S]*?)\[\/smile\]/gi,
+      (_m, inner) => ` ${T.LAUGH_SPAN_OPEN} ${String(inner).trim()} ${T.LAUGH_SPAN_CLOSE} `
+    );
+    if (/\[smile\]/i.test(cleaned)) {
+      cleaned = cleaned.replace(/\[smile\]/gi, ` ${T.LAUGH_SPAN_OPEN} `);
+      cleaned = `${cleaned} ${T.LAUGH_SPAN_CLOSE} `;
+    }
+    cleaned = cleaned.replace(/\[\/smile\]/gi, ` ${T.LAUGH_SPAN_CLOSE} `);
+  }
+
+  // 4. Laughter / Chuckle / Giggle cues:
+  // Uses the exact paralinguistic token sequence (`\uE004 \uE009 <text> \uE00A`, i.e.,
+  // `[laughter] <laughter> <text> </laughter>` -> tokens 151651, 151656, ..., 151657)
+  // that produces realistic acoustic human laughter in zero-shot mode (`promptSpeechTokens > 0`).
+  if (
+    tone === "laugh" ||
+    /\[\/?(?:laugh|laughter|giggle|chuckle)\]/i.test(cleaned) ||
+    /<\/?laughter>/i.test(cleaned)
+  ) {
+    if (tone === "normal") tone = "laugh";
+    detectedCues.push("laugh");
+
+    // Paired [laugh]...[/laugh] or <laughter>...</laughter>
+    cleaned = cleaned.replace(
+      /\[(?:laugh|laughter|giggle|chuckle)\]([\s\S]*?)\[\/(?:laugh|laughter|giggle|chuckle)\]/gi,
+      (_m, inner) => ` ${T.LAUGHTER} ${T.LAUGH_SPAN_OPEN} ${String(inner).trim()} ${T.LAUGH_SPAN_CLOSE} `
+    );
+    cleaned = cleaned.replace(
+      /<laughter>([\s\S]*?)<\/laughter>/gi,
+      (_m, inner) => ` ${T.LAUGHTER} ${T.LAUGH_SPAN_OPEN} ${String(inner).trim()} ${T.LAUGH_SPAN_CLOSE} `
+    );
+
+    // Standalone [laugh] / [laughter] followed by a phrase/sentence:
+    // Wrap the following clause in `\uE004 \uE009 <clause> \uE00A` (the exact pattern
+    // `" \uE004 \uE009 You are not serious! \uE00A"` verified with Ashley's voice)
+    cleaned = cleaned.replace(
+      /\[(?:laugh|laughter)\]\s*([^.!?\n\uE000-\uE00F]+[.!?]?)/gi,
+      (_m, phrase) => ` ${T.LAUGHTER} ${T.LAUGH_SPAN_OPEN} ${String(phrase).trim()} ${T.LAUGH_SPAN_CLOSE} `
+    );
+
+    // Any remaining standalone [laugh] / [laughter] / [chuckle] / [giggle]
+    cleaned = cleaned.replace(/\[(?:laugh|laughter|giggle|chuckle)\]/gi, ` ${T.LAUGHTER} `);
+    cleaned = cleaned.replace(/\[\/(?:laugh|laughter|giggle|chuckle)\]/gi, ` ${T.LAUGH_SPAN_CLOSE} `);
+    cleaned = cleaned.replace(/<laughter>/gi, ` ${T.LAUGH_SPAN_OPEN} `);
+    cleaned = cleaned.replace(/<\/laughter>/gi, ` ${T.LAUGH_SPAN_CLOSE} `);
+  }
+
+  // 5. Emphasis / Pitch Raise (`[raise]...[/raise]` / `[emphasis]` / `<strong>...</strong>`):
+  // Maps to CosyVoice 3's trained `<strong>` (\uE001, 151648) and `</strong>` (\uE002, 151649) tokens.
+  if (tone === "raise" || /\[\/?(?:raise|emphasis)\]/i.test(cleaned) || /<\/?strong>/i.test(cleaned)) {
+    if (tone === "normal") tone = "raise";
     detectedCues.push("raise");
+    cleaned = cleaned.replace(
+      /\[(?:raise|emphasis)\]([\s\S]*?)\[\/(?:raise|emphasis)\]/gi,
+      (_m, inner) => ` ${T.STRONG_OPEN} ${String(inner).trim()} ${T.STRONG_CLOSE} `
+    );
+    cleaned = cleaned.replace(
+      /<strong>([\s\S]*?)<\/strong>/gi,
+      (_m, inner) => ` ${T.STRONG_OPEN} ${String(inner).trim()} ${T.STRONG_CLOSE} `
+    );
+    cleaned = cleaned.replace(/\[(?:raise|emphasis)\]/gi, ` ${T.STRONG_OPEN} `);
+    cleaned = cleaned.replace(/\[\/(?:raise|emphasis)\]/gi, ` ${T.STRONG_CLOSE} `);
+    cleaned = cleaned.replace(/<strong>/gi, ` ${T.STRONG_OPEN} `);
+    cleaned = cleaned.replace(/<\/strong>/gi, ` ${T.STRONG_CLOSE} `);
   }
 
-  // Strip laughter and chuckle tags cleanly so they do not cause repeats or glitchy audio
-  cleaned = cleaned.replace(/\[\/?(?:laugh|laughter|giggle|chuckle)\]/gi, " ");
-  cleaned = cleaned.replace(/<\/?laughter>/gi, " ");
-
-  // Detect breath/sigh cues
-  if (/\[(?:sigh|breath)\]/i.test(cleaned) || /<\/?breath>/i.test(cleaned)) {
+  // 6. Breath, Quick Breath / Gasp, Sigh, Cough, Hmm / Mn, Lipsmack:
+  // Maps directly to CosyVoice 3's trained paralinguistic tokens.
+  if (/\[quick_breath\]/i.test(cleaned)) {
     detectedCues.push("breath");
+    cleaned = cleaned.replace(/\[quick_breath\]/gi, ` ${T.QUICK_BREATH} `);
   }
 
-  if (/\[(?:hmm+|thinking)\]/i.test(cleaned)) {
-    detectedCues.push("hmm");
+  if (/\[breath\]/i.test(cleaned) || /<\/?breath>/i.test(cleaned)) {
+    detectedCues.push("breath");
+    cleaned = cleaned.replace(/<\/?breath>/gi, ` ${T.BREATH} `);
+    cleaned = cleaned.replace(/\[breath\]/gi, ` ${T.BREATH} `);
   }
 
-  if (/\[gasp\]/i.test(cleaned)) {
+  if (/\[sigh\]/i.test(cleaned) || /<\/?sigh>/i.test(cleaned)) {
+    detectedCues.push("sigh");
+    cleaned = cleaned.replace(/<\/?sigh>/gi, ` ${T.SIGH} `);
+    cleaned = cleaned.replace(/\[sigh\]/gi, ` ${T.SIGH} `);
+  }
+
+  if (/\[gasp\]/i.test(cleaned) || /<\/?gasp>/i.test(cleaned)) {
     detectedCues.push("gasp");
+    cleaned = cleaned.replace(/<\/?gasp>/gi, ` ${T.QUICK_BREATH} `);
+    cleaned = cleaned.replace(/\[gasp\]/gi, ` ${T.QUICK_BREATH} `);
   }
 
-  // ----------------------------------------------------
-  // CosyVoice 3: Native Instruct Tags (<strong>, <breath>)
-  // ----------------------------------------------------
-
-  // 1. Breath / Sigh:
-  // Convert [breath] or [sigh] to native <breath>
-  cleaned = cleaned.replace(/\[(?:breath|sigh)\]/gi, " <breath> ");
-
-  // 2. Emphasis / Strong:
-  // Convert wrapped [raise]...[/raise] or [emphasis]...[/emphasis] to <strong>...</strong>
-  cleaned = cleaned.replace(
-    /\[(?:raise|emphasis)\]([\s\S]*?)\[\/(?:raise|emphasis)\]/gi,
-    "<strong>$1</strong>"
-  );
-  // If tone was raised or isolated [raise] is used, wrap with <strong> if not already wrapped
-  if (tone === "raise" && !/<strong>[\s\S]*?<\/strong>/i.test(cleaned)) {
-    cleaned = `<strong>${cleaned.trim()}</strong>`;
+  if (/\[cough\]/i.test(cleaned)) {
+    detectedCues.push("cough");
+    cleaned = cleaned.replace(/\[cough\]/gi, ` ${T.COUGH} `);
   }
-  cleaned = cleaned.replace(/\[\/?(?:raise|emphasis)\]/gi, " ");
 
-  // 3. Reactions:
-  cleaned = cleaned.replace(/\[(?:hmm+|thinking)\]/gi, "Hmm... ");
-  cleaned = cleaned.replace(/\[gasp\]/gi, "<breath> ");
+  if (/\[lipsmack\]/i.test(cleaned)) {
+    detectedCues.push("lipsmack");
+    cleaned = cleaned.replace(/\[lipsmack\]/gi, ` ${T.LIPSMACK} `);
+  }
 
-  // Clean multiple consecutive duplicate tags or spaces
+  if (/\[(?:hmm+|thinking|mn)\]/i.test(cleaned)) {
+    detectedCues.push("hmm");
+    cleaned = cleaned.replace(/\[(?:hmm+|thinking|mn)\]/gi, ` ${T.MN} `);
+  }
+
+  // 7. Safety sweep: strip any remaining XML or square-bracket control tags so QwenTokenizer
+  // never pronounces a tag name as a literal word, then ensure every paralinguistic token
+  // (`\uE000..\uE00F`) is surrounded by spaces so `QwenTokenizer::pretokenize` isolates it.
   cleaned = cleaned
-    .replace(/(?:<breath>\s*)+<breath>/gi, "<breath>")
+    .replace(/<\/?[a-z0-9_-]+>/gi, " ")
+    .replace(/\[\/?[a-z0-9_\s.-]+\]/gi, " ")
+    .replace(/([\uE000-\uE00F])/g, " $1 ")
+    .replace(/--+/g, " — ")
+    .replace(/\.{4,}/g, "...")
+    .replace(/(?:\.\.\.\s*){2,}/g, "... ")
+    .replace(/([!?]){2,}/g, "$1")
     .replace(/\s+/g, " ")
     .trim();
 
-  // Pad whisper with gentle breath pauses
-  if (tone === "whisper" && cleaned.length > 0) {
-    cleaned = `<breath> ${cleaned.toLowerCase()} <breath>`;
+  // If the text starts or ends with a paralinguistic token, keep a leading/trailing space
+  // so `QwenTokenizer::pretokenize` always sees `"ĠîĢ..."` and merges to a single token ID.
+  if (/^[\uE000-\uE00F]/.test(cleaned)) {
+    cleaned = ` ${cleaned}`;
+  }
+
+  // For whispered segments, prepend a gentle ellipsis pause for natural breath onset
+  if (tone === "whisper" && cleaned.length > 0 && !cleaned.trimStart().startsWith("...")) {
+    cleaned = `... ${cleaned.trimStart()}`;
+  }
+
+  // For yelled/projected segments, ensure energetic terminal punctuation
+  if (tone === "yell" && cleaned.length > 0) {
+    if (!/[!?\uE000-\uE00F]$/.test(cleaned.trimEnd())) {
+      cleaned = `${cleaned.trimEnd()}!`;
+    }
   }
 
   return { cleanedText: cleaned, detectedCues, tone };
+}
+
+/**
+ * Ensures a synthesized sentence chunk ends with natural terminal punctuation while
+ * preserving leading/trailing spaces around paralinguistic tokens (`\uE000..\uE00F`).
+ */
+function ensureNaturalSentencePunctuation(chunkText: string): string {
+  const trimmed = chunkText.trim();
+  if (!trimmed) return trimmed;
+
+  // Strip any trailing paralinguistic tokens temporarily to check punctuation on the last spoken word
+  const trailingTokensMatch = trimmed.match(/((?:\s*[\uE000-\uE00F])+)$/);
+  const body = trailingTokensMatch
+    ? trimmed.slice(0, trimmed.length - trailingTokensMatch[0].length).trim()
+    : trimmed;
+  const trailingTokens = trailingTokensMatch ? trailingTokensMatch[0].replace(/([\uE000-\uE00F])/g, " $1 ") : "";
+
+  let punctuatedBody = body;
+  if (punctuatedBody && !/[.!?。！？…;:,—-\uE000-\uE00F]$/.test(punctuatedBody)) {
+    punctuatedBody = `${punctuatedBody}.`;
+  }
+
+  let result = `${punctuatedBody} ${trailingTokens}`.replace(/([\uE000-\uE00F])/g, " $1 ").replace(/\s+/g, " ").trim();
+  // Always prefix with a single space if the chunk contains paralinguistic tokens so
+  // `QwenTokenizer::pretokenize` binds the leading space (`Ġ`) to any initial token.
+  if (/[\uE000-\uE00F]/.test(result)) {
+    result = ` ${result}`;
+  }
+  return result;
 }
 
 interface SpeechChunk {
@@ -373,23 +910,20 @@ interface SpeechChunk {
 /**
  * Splits speech text into natural, flowing sentence chunks (up to ~36 words / ~14-16s).
  * Avoids breaking within single sentences unless a sentence is extraordinarily long (>38 words).
- * Keeps prosody and intonation natural and unbroken, and preserves XML tags without splitting them.
+ * Keeps prosody and intonation natural and unbroken.
  */
 function splitSpeechIntoSentences(text: string, targetMaxWords = 36): SpeechChunk[] {
   const trimmedText = text.trim();
   if (!trimmedText) return [];
 
-  // Count words ignoring markup tags
-  const cleanForWordCount = trimmedText.replace(/<\/?[a-z0-9_-]+>/gi, " ").trim();
-  const words = cleanForWordCount.split(/\s+/).filter(Boolean);
+  const words = trimmedText.split(/\s+/).filter(Boolean);
   if (words.length <= targetMaxWords) {
-    const isEnd = /[.!?]$/.test(cleanForWordCount);
+    const isEnd = /[.!?]$/.test(trimmedText);
     return [{ text: trimmedText, isSentenceEnd: isEnd }];
   }
 
-  // Split along sentence terminators (. ! ? or newline) that don't occur inside an XML tag
-  const sentenceMatches =
-    trimmedText.match(/(?:<[^>]+>|[^.!?\n])+([.!?\n]+(?=[\s<]|$)|$)/g) || [trimmedText];
+  // Split along sentence terminators (. ! ? or newline)
+  const sentenceMatches = trimmedText.match(/[^.!?\n]+([.!?\n]+|$)/g) || [trimmedText];
   const chunks: SpeechChunk[] = [];
   let currentText = "";
 
@@ -398,43 +932,36 @@ function splitSpeechIntoSentences(text: string, targetMaxWords = 36): SpeechChun
     if (!sTrimmed) continue;
 
     const candidate = currentText ? `${currentText} ${sTrimmed}` : sTrimmed;
-    const candidateWords = candidate.replace(/<\/?[a-z0-9_-]+>/gi, " ").split(/\s+/).filter(Boolean).length;
+    const candidateWords = candidate.split(/\s+/).filter(Boolean).length;
 
     if (candidateWords <= targetMaxWords) {
       currentText = candidate;
     } else {
       if (currentText) {
-        const cleanCurrent = currentText.replace(/<\/?[a-z0-9_-]+>/gi, "").trim();
-        const isEnd = /[.!?]$/.test(cleanCurrent);
-        chunks.push({ text: currentText, isSentenceEnd: isEnd });
+        const isEnd = /[.!?]$/.test(currentText.trim());
+        chunks.push({ text: currentText.trim(), isSentenceEnd: isEnd });
       }
 
       // If a single standalone sentence is massive (>38 words without a period):
-      const sWords = sTrimmed.replace(/<\/?[a-z0-9_-]+>/gi, " ").split(/\s+/).filter(Boolean).length;
+      const sWords = sTrimmed.split(/\s+/).filter(Boolean).length;
       if (sWords > targetMaxWords) {
-        // Split on major clause punctuation (, ; : — -) outside tags
-        const clauseMatches =
-          sTrimmed.match(/(?:<[^>]+>|[^,;:—-])+([,;:—-]+(?=[\s<]|$)|$)/g) || [sTrimmed];
+        const clauseMatches = sTrimmed.match(/[^,;:—-]+([,;:—-]+|$)/g) || [sTrimmed];
         let subText = "";
         for (const cl of clauseMatches) {
           const clTrim = cl.trim();
           if (!clTrim) continue;
           const subCandidate = subText ? `${subText} ${clTrim}` : clTrim;
-          const subWords = subCandidate.replace(/<\/?[a-z0-9_-]+>/gi, " ").split(/\s+/).filter(Boolean).length;
+          const subWords = subCandidate.split(/\s+/).filter(Boolean).length;
           if (subWords <= targetMaxWords) {
             subText = subCandidate;
           } else {
             if (subText) {
-              chunks.push({ text: subText, isSentenceEnd: false });
+              chunks.push({ text: subText.trim(), isSentenceEnd: false });
             }
             subText = clTrim;
           }
         }
-        if (subText) {
-          currentText = subText;
-        } else {
-          currentText = "";
-        }
+        currentText = subText ? subText.trim() : "";
       } else {
         currentText = sTrimmed;
       }
@@ -442,8 +969,7 @@ function splitSpeechIntoSentences(text: string, targetMaxWords = 36): SpeechChun
   }
 
   if (currentText.trim()) {
-    const cleanCurrent = currentText.replace(/<\/?[a-z0-9_-]+>/gi, "").trim();
-    const isEnd = /[.!?]$/.test(cleanCurrent);
+    const isEnd = /[.!?]$/.test(currentText.trim());
     chunks.push({ text: currentText.trim(), isSentenceEnd: isEnd });
   }
 
@@ -464,11 +990,19 @@ function parseTextAndPauses(rawText: string): TextOrPauseSegment[] {
     }
   );
 
-  // Clean empty wrapper tags like [whisper][/whisper]
-  text = text.replace(/\[(whisper|soft|yell|shout|loud|raise|emphasis)\]\s*\[\/\1\]/gi, "");
+  // Clean empty wrapper tags like [whisper][/whisper] or [smile][/smile]
+  text = text.replace(
+    /\[(whisper|soft|yell|shout|loud|raise|emphasis|smile|laugh|laughter|chuckle|giggle)\]\s*\[\/\1\]/gi,
+    ""
+  );
 
-  // Match either [pause X.Xs] or pointed tone wrapper blocks
-  const TOKEN_REGEX = /\[pause\s*([0-9.]+)\s*(?:s|sec|seconds)?\]|\[(whisper|soft|yell|shout|loud|raise|emphasis)\]([\s\S]*?)\[\/\2\]/gi;
+  // Split explicit long pauses (> 1.2s) and pointed volume wrapper spans
+  // ([whisper]...[/whisper], [yell]...[/yell]) into dedicated speech segments.
+  // Paralinguistic spans ([laugh]...[/laugh], [smile]...[/smile], [raise]...[/raise])
+  // are kept inline inside the sentence so CosyVoice 3's paralinguistic tokens
+  // (\uE000..\uE00F -> 151647..151662) flow naturally without chopping the utterance.
+  const TOKEN_REGEX =
+    /\[pause\s*([0-9.]+)\s*(?:s|sec|seconds)?\]|\[(whisper|soft|yell|shout|loud)\]([\s\S]*?)\[\/\2\]/gi;
   const segments: TextOrPauseSegment[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -488,10 +1022,9 @@ function parseTextAndPauses(rawText: string): TextOrPauseSegment[] {
       const toneTag = match[2].toLowerCase();
       const content = (match[3] || "").trim();
       if (content) {
-        let tone: "normal" | "whisper" | "yell" | "raise" = "normal";
+        let tone: "normal" | "whisper" | "yell" | "raise" | "smile" | "laugh" = "normal";
         if (toneTag === "whisper" || toneTag === "soft") tone = "whisper";
         else if (toneTag === "yell" || toneTag === "shout" || toneTag === "loud") tone = "yell";
-        else if (toneTag === "raise" || toneTag === "emphasis") tone = "raise";
         segments.push({ type: "speech", text: content, tone });
       }
     }
@@ -623,6 +1156,262 @@ function getValidReferenceWav(userProvidedSrc?: string): string | undefined {
   return undefined;
 }
 
+/**
+ * Verbatim transcripts (`promptText`) for built-in preset voices and cloned custom voices.
+ *
+ * CRITICAL ENGINE REQUIREMENT (`qvac-tts.cpp` / `CosyVoicePipeline::setup_reference_voice`):
+ * When `referenceAudioSrc` is passed WITHOUT `promptText`, `qvac-tts.cpp` falls back to
+ * `no transcript: cross-lingual mode` and sets `promptSpeechTokens = 0` in the Qwen2.5 LLM!
+ * When `promptText` IS provided (and `instruct` is undefined), `qvac-tts.cpp` runs in
+ * TRUE zero-shot mode (`promptSpeechTokens > 0`), feeding all extracted reference speech
+ * tokens into the LLM so paralinguistic tokens (`151647..151662`, e.g., `[laughter]`,
+ * `<laughter>...</laughter>`) generate ultra-realistic human laughter in the speaker's voice.
+ */
+const REFERENCE_AUDIO_TRANSCRIPTS: Record<string, string> = {
+  // Built-in English (US & UK)
+  voice_en_male_1: "It is not so important to know everything as to appreciate what we learn.",
+  "voice_en-gb_male_1": "It is not so important to know everything as to appreciate what we learn.",
+  voice_en_male_2: "Love all, trust a few, do wrong to none.",
+  "voice_en-gb_male_2": "Love all, trust a few, do wrong to none.",
+  voice_en_male_3: "God has given you one face, and you make yourself another.",
+  "voice_en-gb_male_3": "God has given you one face, and you make yourself another.",
+  voice_en_male_4: "Life without love is like a tree without blossoms or fruit.",
+  "voice_en-gb_male_4": "Life without love is like a tree without blossoms or fruit.",
+  voice_en_male_5: "Friends show their love in times of trouble, not in happiness.",
+  "voice_en-gb_male_5": "Friends show their love in times of trouble, not in happiness.",
+  voice_en_female_1: "In the theater of life, we are all actors sharing the same scene.",
+  "voice_en-gb_female_1": "In the theater of life, we are all actors sharing the same scene.",
+  voice_en_female_2: "The years teach much which the days never know.",
+  "voice_en-gb_female_2": "The years teach much which the days never know.",
+  voice_en_female_3: "Our distrust is very expensive.",
+  "voice_en-gb_female_3": "Our distrust is very expensive.",
+  voice_en_female_4: "Just trust yourself, then you will know how to live.",
+  "voice_en-gb_female_4": "Just trust yourself, then you will know how to live.",
+  voice_en_female_5: "Ideas are the beginning points of all fortunes.",
+  "voice_en-gb_female_5": "Ideas are the beginning points of all fortunes.",
+
+  // Built-in Australian English (en-au)
+  "voice_en-au_male_1": "Every sunrise brings a new chance to make memories.",
+  "voice_en-au_male_2": "The night sky is a blanket stitched with stars.",
+  "voice_en-au_male_3": "Water is my sanctuary, my solace, my escape.",
+  "voice_en-au_male_4": "Fireworks paint the sky with bursts of colorful light.",
+  "voice_en-au_male_5": "G'day, I'm Brandon. This is a quick sample of my voice. Easygoing, warm, and perfect for natural conversations.",
+  "voice_en-au_female_1": "Movies bring the mighty dinosaurs back to life, captivating our hearts with ancient wonder.",
+  "voice_en-au_female_2": "Movies bring the mighty dinosaurs back to life, captivating our hearts with ancient wonder.",
+  "voice_en-au_female_3": "Hi, I'm Gabby. A warm, soft, and authentic voice for your next narration project. Let's get started.",
+  "voice_en-au_female_4": "Cleanliness is the foundation upon which creativity builds its dreams.",
+  "voice_en-au_female_5": "A curious cat may distract, but their purr inspires creativity.",
+
+  // Built-in African English (en-af)
+  "voice_en-af_male_1": "Success is the sum of small efforts, repeated day in and day out.",
+  "voice_en-af_male_2": "Baking cookies fills the kitchen with warmth and love.",
+  "voice_en-af_male_3": "Every dog has a heart made of gold.",
+  "voice_en-af_male_4": "Airplanes take us high above, showing how change lifts us up.",
+  "voice_en-af_male_5": "The spirit of the lion guides me in the hunt. I brave the dangers of the world for my people and my ancestors.",
+  "voice_en-af_female_1": "History is a story written in the sands of time.",
+  "voice_en-af_female_2": "Let your words be seeds of kindness and hope.",
+  "voice_en-af_female_3": "Let the light of imagination guide your crafty hands.",
+  "voice_en-af_female_4": "Stories are bridges built from imagination to understanding.",
+  "voice_en-af_female_5": "In the wild realms, imagination finds its boundless wings.",
+
+  // Custom & Cloned Voices (including Ashley)
+  voice_preview_ashley:
+    "Okay, here's your reminder to stop waiting for the perfect moment. Start small, have fun, and see where it takes you.",
+  "voice_cloned-1793097051945_1793097051952":
+    "Okay, here's your reminder to stop waiting for the perfect moment. Start small, have fun, and see where it takes you.",
+  "voice_cloned-1793098898966_1793098898974":
+    "Some voices aren't born, they're built. Crafted to tell stories that feel like they've always been there.",
+  "voice_cloned-1793097155815_1793097155822":
+    "Why can't your nose be twelve inches long? Because then it would be a foot.",
+  "voice_cloned-1793097127465_1793097127471":
+    "Hey, it's Tyler. A clean, high energy YouTube delivery that makes your script sound like a real creator, not a stiff voiceover.",
+  "voice_cloned-1793100171467_1793100171474":
+    "Um, okay, so this might sound silly, but I just got this weird sparkly feeling in my chest and I think, I think I'm actually falling in love.",
+  "voice_cloned-1792960262139_1792960262148":
+    "Um, okay, so this might sound silly, but I just got this weird sparkly feeling in my chest and I think, I think I'm actually falling in love.",
+  "voice_cloned-1792771102919_1792771102930":
+    "Um, okay, so this might sound silly, but I just got this weird sparkly feeling in my chest and I think, I think I'm actually falling in love.",
+  "voice_cloned-1792762530859_1792762530871":
+    "Um, okay, so this might sound silly, but I just got this weird sparkly feeling in my chest and I think, I think I'm actually falling in love.",
+  "voice_cloned-1793097083205_1793097083213":
+    "Hey everyone, so I just wanted to jump on here real quick. I've been getting a lot of questions lately about my skincare routine, and honestly, it's pretty simple. Consistency is key, you know? Plus, I'm always trying new things, so I'll probably do a full breakdown soon. Stay tuned for that, and remember to always be your amazing selves.",
+  "voice_cloned-1793056611014_1793056611024":
+    "Hey everyone, so I just wanted to jump on here real quick. I've been getting a lot of questions lately about my skincare routine, and honestly, it's pretty simple. Consistency is key, you know? Plus, I'm always trying new things, so I'll probably do a full breakdown soon. Stay tuned for that, and remember to always be your amazing selves.",
+  "voice_cloned-1792772128388_1792772128399":
+    "If you need an expressive voice for comedic gaming, animation, weird science, explainers, or just any other casual narration, this is the right voice.",
+  "voice_cloned-1792757454181_1792757454192":
+    "If you need an expressive voice for comedic gaming, animation, weird science, explainers, or just any other casual narration, this is the right voice.",
+  "voice_cloned-1792771503498_1792771503510":
+    "Every mirror in the house had broken during the night, except for the one in the hallway, and in it, something kept moving. But what was it?",
+  "voice_cloned-1793097019385_1793097019392":
+    "Wait, you're still scrolling? Creators, use this bright and sweet voice to give your reel the life it deserves.",
+};
+
+const REFERENCE_WAV_SIZE_TRANSCRIPTS: Record<number, string> = {
+  379006:
+    "Okay, here's your reminder to stop waiting for the perfect moment. Start small, have fun, and see where it takes you.",
+  297504:
+    "Some voices aren't born, they're built. Crafted to tell stories that feel like they've always been there.",
+  219764: "Why can't your nose be twelve inches long? Because then it would be a foot.",
+  409098:
+    "Hey, it's Tyler. A clean, high energy YouTube delivery that makes your script sound like a real creator, not a stiff voiceover.",
+  569594:
+    "Um, okay, so this might sound silly, but I just got this weird sparkly feeling in my chest and I think, I think I'm actually falling in love.",
+  954536:
+    "Hey everyone, so I just wanted to jump on here real quick. I've been getting a lot of questions lately about my skincare routine, and honestly, it's pretty simple. Consistency is key, you know? Plus, I'm always trying new things, so I'll probably do a full breakdown soon. Stay tuned for that, and remember to always be your amazing selves.",
+  466776:
+    "If you need an expressive voice for comedic gaming, animation, weird science, explainers, or just any other casual narration, this is the right voice.",
+  485586:
+    "Every mirror in the house had broken during the night, except for the one in the hallway, and in it, something kept moving. But what was it?",
+};
+
+function resolveReferencePromptText(userProvidedSrc?: string, refWavPath?: string): string | undefined {
+  const candidates = [userProvidedSrc, refWavPath].filter((x): x is string => Boolean(x));
+
+  for (const candidate of candidates) {
+    // 1. Check for a sidecar .txt transcript next to the audio file
+    try {
+      const ext = path.extname(candidate);
+      const txtCandidate = ext ? `${candidate.slice(0, -ext.length)}.txt` : `${candidate}.txt`;
+      if (fs.existsSync(txtCandidate)) {
+        const text = fs.readFileSync(txtCandidate, "utf8").trim();
+        if (text) return text;
+      }
+    } catch {}
+
+    // 2. Match against known preset or custom voice filenames
+    const base = path.basename(candidate, path.extname(candidate));
+    if (REFERENCE_AUDIO_TRANSCRIPTS[base]) {
+      return REFERENCE_AUDIO_TRANSCRIPTS[base];
+    }
+    for (const [key, transcript] of Object.entries(REFERENCE_AUDIO_TRANSCRIPTS)) {
+      if (base.startsWith(key)) {
+        return transcript;
+      }
+    }
+  }
+
+  // 3. Match by WAV byte size for cloned custom voices
+  if (refWavPath) {
+    try {
+      const size = fs.statSync(refWavPath).size;
+      if (REFERENCE_WAV_SIZE_TRANSCRIPTS[size]) {
+        return REFERENCE_WAV_SIZE_TRANSCRIPTS[size];
+      }
+    } catch {}
+  }
+
+  return undefined;
+}
+
+/**
+ * Creates a non-destructive companion model set directory in `os.tmpdir()` with symlinks to
+ * the user's downloaded CosyVoice 3 GGUF files (`~/.qvac/models/sets/...`) and an augmented
+ * `vocab.json` + `merges.txt` that maps Private Use Area characters `U+E000..U+E00F` to
+ * CosyVoice 3's 16 trained paralinguistic token IDs (`151647..151662`).
+ *
+ * Keeping the original `~/.qvac/models/sets/...` files untouched preserves QVAC registry
+ * SHA-256 and byte-size checks while allowing `loadModel({ modelSrc: localLlmPath })` to load
+ * the paralinguistic vocabulary directly from disk.
+ */
+let cachedParalinguisticLlmPath: string | undefined;
+
+function ensureParalinguisticCompanionModelPath(): string | undefined {
+  if (cachedParalinguisticLlmPath && fs.existsSync(cachedParalinguisticLlmPath)) {
+    return cachedParalinguisticLlmPath;
+  }
+
+  try {
+    const setsRoot = path.join(os.homedir(), ".qvac", "models", "sets");
+    if (!fs.existsSync(setsRoot)) return undefined;
+
+    let origSetDir: string | undefined;
+    let llmFilename = "cosyvoice3-llm-q8_0.gguf";
+
+    const preferredDir = path.join(setsRoot, "b75e001ce19bae4c");
+    if (
+      fs.existsSync(path.join(preferredDir, "cosyvoice3-llm-q8_0.gguf")) &&
+      fs.existsSync(path.join(preferredDir, "vocab.json")) &&
+      fs.existsSync(path.join(preferredDir, "merges.txt"))
+    ) {
+      origSetDir = preferredDir;
+    } else {
+      for (const entry of fs.readdirSync(setsRoot)) {
+        const candidateDir = path.join(setsRoot, entry);
+        if (!fs.existsSync(path.join(candidateDir, "vocab.json"))) continue;
+        if (fs.existsSync(path.join(candidateDir, "cosyvoice3-llm-q8_0.gguf"))) {
+          origSetDir = candidateDir;
+          llmFilename = "cosyvoice3-llm-q8_0.gguf";
+          break;
+        }
+        if (fs.existsSync(path.join(candidateDir, "cosyvoice3-llm-q4_0.gguf"))) {
+          origSetDir = candidateDir;
+          llmFilename = "cosyvoice3-llm-q4_0.gguf";
+          break;
+        }
+      }
+    }
+
+    if (!origSetDir) return undefined;
+
+    const customSetDir = path.join(os.tmpdir(), "echo-voice-cache", "cosyvoice3-paralinguistic-v1");
+    fs.mkdirSync(customSetDir, { recursive: true });
+
+    for (const file of [
+      llmFilename,
+      "cosyvoice3-flow-f32.gguf",
+      "cosyvoice3-hift-f32.gguf",
+      "voice.gguf",
+    ]) {
+      const src = path.join(origSetDir, file);
+      const dst = path.join(customSetDir, file);
+      if (fs.existsSync(src) && !fs.existsSync(dst)) {
+        fs.symlinkSync(src, dst);
+      }
+    }
+
+    const dstVocab = path.join(customSetDir, "vocab.json");
+    const dstMerges = path.join(customSetDir, "merges.txt");
+
+    if (!fs.existsSync(dstVocab) || !fs.existsSync(dstMerges)) {
+      const vocab = JSON.parse(fs.readFileSync(path.join(origSetDir, "vocab.json"), "utf8"));
+      const mergesRaw = fs.readFileSync(path.join(origSetDir, "merges.txt"), "utf8");
+      const mergesLines = mergesRaw.split("\n").filter((l) => l.trim().length > 0);
+      const header = mergesLines[0].startsWith("#") ? [mergesLines[0]] : [];
+      const body = mergesLines[0].startsWith("#") ? mergesLines.slice(1) : mergesLines;
+
+      // In QwenTokenizer::build_byte_map (GPT-2 byte-to-unicode):
+      // - 0x20 (space) -> U+0120 ('Ġ')
+      // - 0xEE -> U+00EE ('î')
+      // - 0x80 -> U+0122 ('Ģ', since 34 non-printable bytes precede 128: 256 + 34 = 290 = 0x0122)
+      // - 0x80 + k (k=0..15) -> String.fromCodePoint(0x0122 + k) ('Ģ'..'ı')
+      const extraMerges: string[] = ["î Ģ"];
+      for (let k = 0; k < 16; k++) {
+        const lastChar = String.fromCodePoint(0x0122 + k);
+        const tokenNoSpace = `îĢ${lastChar}`;
+        const tokenWithSpace = `ĠîĢ${lastChar}`;
+        extraMerges.push(`îĢ ${lastChar}`);
+        extraMerges.push(`Ġ ${tokenNoSpace}`);
+        vocab[tokenNoSpace] = 151647 + k;
+        vocab[tokenWithSpace] = 151647 + k;
+      }
+
+      fs.writeFileSync(dstVocab, JSON.stringify(vocab));
+      fs.writeFileSync(dstMerges, [...header, ...body, ...extraMerges].join("\n") + "\n");
+    }
+
+    const llmPath = path.join(customSetDir, llmFilename);
+    if (fs.existsSync(llmPath)) {
+      cachedParalinguisticLlmPath = llmPath;
+      return llmPath;
+    }
+  } catch (err) {
+    console.warn("[Echo Voice Engine] Failed to prepare paralinguistic companion set:", err);
+  }
+
+  return undefined;
+}
+
 export class VoiceEngineService {
   private modelsService: ModelsService;
   private loadedModels: Map<string, string> = new Map();
@@ -711,15 +1500,18 @@ export class VoiceEngineService {
 
 
   /**
-   * Ensures the CosyVoice 3 engine is loaded with the configured device (GPU / CPU) and voice profile.
+   * Ensures the CosyVoice 3 engine is loaded with the configured device (GPU / CPU),
+   * reference voice profile, and optional natural-language/structured `instruct` conditioning.
+   *
+   * Note: Basic emotions ('happy', 'sad', 'anger') and paces ('slow', 'fast') are applied
+   * per-call in `textToSpeech()`, so the base zero-shot model (`instruct: undefined`) can
+   * switch between Neutral (zero-shot), Happy, Sad, Anger, Slow, and Fast without reloading.
    */
   private async ensureModelLoaded(opts: {
     engine?: "cosyvoice3";
     language?: string;
     lavaSrEnabled?: boolean;
-    instruct?: string;
-    emotion?: string;
-    pace?: string;
+    instruct?: CosyVoiceInstructOption;
     referenceAudioSrc?: string;
     taskId: string;
     onProgress?: TtsProgressCallback;
@@ -737,11 +1529,18 @@ export class VoiceEngineService {
       throw new Error("QVAC CosyVoice 3 descriptor missing from SDK");
     }
 
-    const rawEmotion = opts.emotion?.toLowerCase() || "";
-    const validEmotions = ["anger", "happy", "neutral", "sad"];
-    const emotion = validEmotions.includes(rawEmotion)
-      ? rawEmotion
-      : undefined;
+    const instruct =
+      typeof opts.instruct === "string"
+        ? opts.instruct.trim() || undefined
+        : opts.instruct && typeof opts.instruct === "object"
+          ? opts.instruct
+          : undefined;
+
+    const instructKey = instruct
+      ? typeof instruct === "string"
+        ? `str:${instruct}`
+        : `obj:${JSON.stringify(instruct)}`
+      : "zero-shot";
 
     let refWavPath = getValidReferenceWav(opts.referenceAudioSrc);
     if (!refWavPath) {
@@ -762,14 +1561,22 @@ export class VoiceEngineService {
       (this.modelsService.isModelDownloaded("cosyvoice3-campplus-fp32") ||
         this.modelsService.isModelDownloaded("cosyvoice3-campplus"));
 
+    const promptText =
+      refWavPath && hasCloningModels
+        ? resolveReferencePromptText(opts.referenceAudioSrc, refWavPath)
+        : undefined;
+
+    const paralinguisticModelSrc = ensureParalinguisticCompanionModelPath() || cosyvoiceDescriptor;
+
     console.log(
-      `[Echo Voice Engine] CosyVoice 3 setup: refWavPath=${refWavPath}, hasCloningModels=${hasCloningModels}, device=${this.inferenceDevice}`,
+      `[Echo Voice Engine] CosyVoice 3 setup: refWavPath=${refWavPath}, hasCloningModels=${hasCloningModels}, hasPromptText=${Boolean(promptText)}, mode=${instructKey}, device=${this.inferenceDevice}`,
     );
 
     const key = [
       "cosyvoice3",
       refWavPath || "native",
-      emotion || "none",
+      promptText ? "zero-shot-transcript" : "cross-lingual",
+      instructKey,
       lavaSr ? "lavasr48k" : "native24k",
       this.inferenceDevice,
     ].join("|");
@@ -780,10 +1587,10 @@ export class VoiceEngineService {
     }
 
     const voiceDesc = refWavPath ? ` voice="${path.basename(refWavPath)}"` : " (native studio voice)";
-    const emotionDesc = emotion ? ` emotion="${emotion}"` : "";
+    const modeDesc = instruct ? ` instruct=${instructKey}` : " (zero-shot natural prosody)";
     const deviceLabel = this.inferenceDevice === "gpu" ? "GPU (Metal)" : "CPU";
     opts.onLog?.({
-      text: `[Echo Voice Engine] Loading CosyVoice 3 Engine (0.5B Q8_0 [FP32 Flow Matching]${lavaSr ? " +LavaSR 48kHz" : ""}${voiceDesc}${emotionDesc} [${deviceLabel}])...`,
+      text: `[Echo Voice Engine] Loading CosyVoice 3 Engine (0.5B Q8_0 [FP32 Flow Matching]${lavaSr ? " +LavaSR 48kHz" : ""}${voiceDesc}${modeDesc} [${deviceLabel}])...`,
       stream: "stdout",
     });
 
@@ -797,16 +1604,17 @@ export class VoiceEngineService {
             cosyvoice3S3tokModelSrc: (qvacSdk as any).TTS_COSYVOICE3_S3TOK_COSYVOICE_FP16,
             cosyvoice3CampplusModelSrc: (qvacSdk as any).TTS_COSYVOICE3_CAMPPLUS_COSYVOICE_FP32,
             referenceAudioSrc: refWavPath,
+            ...(promptText ? { promptText } : {}),
           }
         : {}),
       ...(lavaSr && lavasrSrc
         ? { lavasrEnhancerModelSrc: lavasrSrc }
         : {}),
-      ...(emotion ? { emotion } : {}),
+      ...(instruct ? { instruct } : {}),
     };
 
     const modelId = await (qvacSdk as any).loadModel({
-      modelSrc: cosyvoiceDescriptor,
+      modelSrc: paralinguisticModelSrc,
       modelType: "tts",
       modelConfig: baseConfig,
       onProgress: (p: any) => {
@@ -881,40 +1689,16 @@ export class VoiceEngineService {
       });
 
       const lavaSrEnabled = options.lavaSrEnabled !== false && this.modelsService.isModelDownloaded("lavasr-enhancer");
-      const voicePrompt =
+      const globalVoicePrompt =
         options.voicePrompt ||
         options.prompt ||
-        options.description ||
-        firstRound.prompt ||
-        firstRound.description;
-
-      const rawEmotion = firstRound.emotion?.toLowerCase() || "";
-      const validEmotions = [
-        "command", "anger", "narration", "conversation", "disgust",
-        "fear", "happy", "neutral", "proper noun", "news", "sad", "surprise"
-      ];
-      const detectedEmotion = validEmotions.includes(rawEmotion)
-        ? rawEmotion
-        : undefined;
-
-      const firstRoundRefAudio = firstRound.referenceAudioSrc || options.referenceAudioSrc;
-      const { engine } = await this.ensureModelLoaded({
-        engine: activeEngine,
-        language: options.language || "en",
-        lavaSrEnabled,
-        instruct: voicePrompt || undefined,
-        emotion: detectedEmotion,
-        pace: firstRound.pace?.toLowerCase(),
-        referenceAudioSrc: firstRoundRefAudio,
-        taskId,
-        onProgress,
-        onLog,
-      });
+        options.description;
 
       if (isCancelled?.()) return { success: false, error: "Cancelled" };
 
       const allSamples: number[] = [];
       let sampleRate = lavaSrEnabled ? 48000 : 24000;
+      const engine = activeEngine;
 
       for (let i = 0; i < activeRounds.length; i++) {
         if (isCancelled?.()) {
@@ -932,21 +1716,6 @@ export class VoiceEngineService {
         if (!roundRefAudio) {
           roundRefAudio = "/voices/samples/en/voice_en_male_1.mp3";
         }
-        const roundRawEmotion = round.emotion?.toLowerCase() || "";
-        const roundEmotion = validEmotions.includes(roundRawEmotion) ? roundRawEmotion : detectedEmotion;
-
-        const { modelId: roundModelId } = await this.ensureModelLoaded({
-          engine: activeEngine,
-          language: options.language || "en",
-          lavaSrEnabled,
-          instruct: round.prompt || round.description || voicePrompt || undefined,
-          emotion: roundEmotion,
-          pace: round.pace?.toLowerCase(),
-          referenceAudioSrc: roundRefAudio,
-          taskId,
-          onProgress,
-          onLog,
-        });
 
         onProgress?.({
           taskId,
@@ -964,7 +1733,7 @@ export class VoiceEngineService {
           crossfadeAppend(allSamples, interTurnSamples, sampleRate, 14);
         }
 
-        // Parse explicit [pause X.Xs] cues and pointed tone blocks ([whisper], [yell], [raise])
+        // Parse explicit [pause X.Xs] cues and pointed volume blocks ([whisper], [yell])
         const segments = parseTextAndPauses(round.text);
         let speechSegCount = 0;
 
@@ -987,9 +1756,32 @@ export class VoiceEngineService {
           }
 
           if (seg.type === "speech" && seg.text) {
-            // Process cues & formatting for CosyVoice 3 native instruct tags
+            // Process cues & formatting for CosyVoice 3 native paralinguistic tags (<laughter>, <strong>, [breath], [sigh])
             const { cleanedText, detectedCues, tone: segTone } = processConversationalCues(seg.text, seg.tone);
             if (!cleanedText) continue;
+
+            // Resolve non-conflicting conditioning for this segment
+            const segmentConditioning = resolveCosyVoiceConditioning({
+              segTone,
+              detectedCues,
+              speakingTone: round.speakingTone,
+              emotion: round.emotion,
+              pace: round.pace,
+              dialect: round.dialect,
+              customPrompt:
+                round.prompt !== undefined ? round.prompt : globalVoicePrompt,
+            });
+
+            const { modelId: segmentModelId } = await this.ensureModelLoaded({
+              engine: activeEngine,
+              language: options.language || "en",
+              lavaSrEnabled,
+              instruct: segmentConditioning.loadInstruct,
+              referenceAudioSrc: roundRefAudio,
+              taskId,
+              onProgress,
+              onLog,
+            });
 
             // Split into natural sentence chunks (up to 36 words / ~15s)
             // Keeping complete sentences intact so prosody, melody, and flow are never broken
@@ -997,7 +1789,7 @@ export class VoiceEngineService {
 
             for (let cIdx = 0; cIdx < sentenceChunks.length; cIdx++) {
               const chunkObj = sentenceChunks[cIdx];
-              const chunkText = chunkObj.text;
+              const chunkText = ensureNaturalSentencePunctuation(chunkObj.text);
               if (!chunkText) continue;
 
               if (isCancelled?.()) {
@@ -1012,54 +1804,30 @@ export class VoiceEngineService {
 
               // Natural, human respiration and dramatic pause cadence:
               // - 0.14s for comma/clause mid-sentence pauses
-              // - 0.38s between complete sentences (natural human breath pause)
-              // - 0.28s between cue-tagged segments
+              // - 0.36s between complete sentences (natural human breath pause)
+              // - 0.26s between cue-tagged segments
               if (allSamples.length > 0) {
                 const isMidSentence = cIdx > 0 && !sentenceChunks[cIdx - 1].isSentenceEnd;
-                const pauseDuration = isMidSentence ? 0.14 : (cIdx > 0 ? 0.38 : 0.28);
+                const pauseDuration = isMidSentence ? 0.14 : (cIdx > 0 ? 0.36 : 0.26);
                 const interPause = generateAcousticRoomPause(pauseDuration, sampleRate);
                 crossfadeAppend(allSamples, interPause, sampleRate, 12);
               }
               speechSegCount++;
 
               const ttsPayload: any = {
-                modelId: roundModelId,
+                modelId: segmentModelId,
                 text: chunkText,
                 inputType: "text",
                 stream: false,
               };
 
-              if (engine === "cosyvoice3") {
-                const roundEmotion = (round.emotion?.toLowerCase() || detectedEmotion || "").trim();
-                const validCosyEmotions = ["anger", "happy", "neutral", "sad"];
-
-                if (segTone === "whisper" || detectedCues.includes("whisper")) {
-                  // Pointed whisper: CosyVoice 3 native soft volume and slow pace
-                  ttsPayload.volume = "soft";
-                  ttsPayload.pace = "slow";
-                } else if (segTone === "yell" || detectedCues.includes("yell")) {
-                  // Pointed yell: CosyVoice 3 native loud volume and anger emotion for forceful projection
-                  ttsPayload.volume = "loud";
-                  ttsPayload.emotion = "anger";
-                } else if (segTone === "raise" || detectedCues.includes("raise")) {
-                  // Pointed pitch raise: CosyVoice 3 native loud volume with elevated delivery
-                  ttsPayload.volume = "loud";
-                } else {
-                  // Normal segment: map base round emotion
-                  let cosyEmotion = validCosyEmotions.includes(roundEmotion) ? roundEmotion : undefined;
-                  if ((detectedCues.includes("sigh") || detectedCues.includes("breath")) && !cosyEmotion) {
-                    cosyEmotion = "sad";
-                  }
-
-                  if (cosyEmotion && cosyEmotion !== "neutral") {
-                    ttsPayload.emotion = cosyEmotion;
-                  } else {
-                    const roundPace = (round.pace?.toLowerCase() || "").trim();
-                    const validPaces = ["slow", "moderate", "fast"];
-                    if (validPaces.includes(roundPace) && roundPace !== "moderate") {
-                      ttsPayload.pace = roundPace;
-                    }
-                  }
+              if (engine === "cosyvoice3" && !segmentConditioning.loadInstruct) {
+                // Only set per-call emotion or pace when no load-time instruct is active,
+                // and set at most ONE of emotion or pace to respect CosyVoice 3's single-instruction rule.
+                if (segmentConditioning.perCallEmotion) {
+                  ttsPayload.emotion = segmentConditioning.perCallEmotion;
+                } else if (segmentConditioning.perCallPace) {
+                  ttsPayload.pace = segmentConditioning.perCallPace;
                 }
               }
 

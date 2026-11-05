@@ -39,6 +39,8 @@ import { InstallRequiredModelsView } from '../components/InstallRequiredModelsVi
 
 export function TextToSpeechScreen() {
   const [state, updateState] = useTextToSpeechState()
+  const [rightPanelTab, setRightPanelTab] = useState<'settings' | 'history'>('settings')
+  const [historySearch, setHistorySearch] = useState('')
   const [loadedHistoryId, setLoadedHistoryId] = useState<string | null>(null)
   const { allRequiredReady, selectedEngine, setSelectedEngine } = useModels()
   const player = usePlayer()
@@ -895,15 +897,15 @@ export function TextToSpeechScreen() {
           <div className="flex h-10 shrink-0 items-center gap-1 px-3.5 select-none border-b border-[#1f1f23]">
             <button
               type="button"
-              onClick={() => updateState({ rightPanelTab: 'settings' })}
+              onClick={() => setRightPanelTab('settings')}
               className={cn(
                 'relative px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer rounded-md select-none',
-                state.rightPanelTab === 'settings'
+                rightPanelTab === 'settings'
                   ? 'text-white'
                   : 'text-zinc-400 hover:text-zinc-200'
               )}
             >
-              {state.rightPanelTab === 'settings' && (
+              {rightPanelTab === 'settings' && (
                 <motion.div
                   layoutId="activeRightTabPill"
                   transition={{ type: 'spring', stiffness: 420, damping: 32 }}
@@ -915,15 +917,15 @@ export function TextToSpeechScreen() {
 
             <button
               type="button"
-              onClick={() => updateState({ rightPanelTab: 'history' })}
+              onClick={() => setRightPanelTab('history')}
               className={cn(
                 'relative px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer rounded-md select-none',
-                state.rightPanelTab === 'history'
+                rightPanelTab === 'history'
                   ? 'text-white'
                   : 'text-zinc-400 hover:text-zinc-200'
               )}
             >
-              {state.rightPanelTab === 'history' && (
+              {rightPanelTab === 'history' && (
                 <motion.div
                   layoutId="activeRightTabPill"
                   transition={{ type: 'spring', stiffness: 420, damping: 32 }}
@@ -939,7 +941,7 @@ export function TextToSpeechScreen() {
         <div className="flex-1 overflow-hidden relative w-full h-full">
           <motion.div
             className="flex w-full h-full items-start"
-            animate={{ x: `-${state.rightPanelTab === 'settings' ? 0 : 100}%` }}
+            animate={{ x: `-${rightPanelTab === 'settings' ? 0 : 100}%` }}
             transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.8 }}
           >
             <SettingsDrawer
@@ -959,22 +961,19 @@ export function TextToSpeechScreen() {
               totalRounds={state.rounds.length}
               playingVoiceId={voicePreview.playingVoiceId}
               onTogglePreview={voicePreview.togglePreview}
-              voicePrompt={focusedRound?.prompt !== undefined ? focusedRound.prompt : state.voicePrompt}
+              voicePrompt={focusedRound?.prompt ?? state.voicePrompt}
               onVoicePromptChange={(val) => {
                 const targetIndex =
                   state.focusedRoundIndex >= 0 && state.focusedRoundIndex < state.rounds.length
                     ? state.focusedRoundIndex
                     : 0
                 updateState({
-                  voicePrompt: val,
+                  voicePrompt: state.rounds.length <= 1 ? val : state.voicePrompt,
                   rounds: state.rounds.map((r, i) =>
                     i === targetIndex ? { ...r, prompt: val } : r
                   ),
                 })
               }}
-              stability={state.stability}
-              similarity={state.similarity}
-              cfgScale={state.cfgScale}
               lavaSrEnabled={state.lavaSrEnabled}
               activeLanguage={activeLanguage}
               onSelectVoice={(id) => {
@@ -991,9 +990,6 @@ export function TextToSpeechScreen() {
               }}
               onOpenCloneModal={() => updateState({ isCloneModalOpen: true })}
               onOpenExplorerModal={() => updateState({ isLanguageSelectorOpen: true })}
-              onStabilityChange={(val) => updateState({ stability: val })}
-              onSimilarityChange={(val) => updateState({ similarity: val })}
-              onCfgScaleChange={(val) => updateState({ cfgScale: val })}
               onToggleLavaSr={() => updateState({ lavaSrEnabled: !state.lavaSrEnabled })}
               onSelectLanguage={(lang) => {
                 loadVoicesForLanguage(lang).then((langVoices) => {
@@ -1016,11 +1012,11 @@ export function TextToSpeechScreen() {
 
             <HistoryDrawer
               history={state.history}
-              historySearch={state.historySearch}
+              historySearch={historySearch}
               playingHistoryId={state.playingHistoryId}
               activeHistoryId={loadedHistoryId}
-              onSearchChange={(q) => updateState({ historySearch: q })}
-              onClearSearch={() => updateState({ historySearch: '' })}
+              onSearchChange={setHistorySearch}
+              onClearSearch={() => setHistorySearch('')}
               onSelectHistoryItem={handleLoadHistory}
               onTogglePlayHistory={handleTogglePlayHistory}
               onDeleteHistoryItem={(id) => {
