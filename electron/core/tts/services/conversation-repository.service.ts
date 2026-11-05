@@ -179,7 +179,7 @@ export class ConversationRepositoryService {
 
         if (data.roundsData && Array.isArray(data.roundsData) && data.roundsData.length > 0) {
           const roundsToCreate = data.roundsData.map((r, idx) => ({
-            id: r.id || `${data.id}-round-${idx}`,
+            id: `${data.id}-round-${idx}`,
             conversationId: data.id,
             roundOrder: idx,
             voiceId: r.voiceId || 'voice-en-male-1',

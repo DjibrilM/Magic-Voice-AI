@@ -5,7 +5,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Slider } from '@/components/ui/slider'
 import ExpandableContainer from '@/components/ExpandableContainer'
 import { cn } from '@/lib/utils'
 import { Voice, LanguageOption, LANGUAGES, useDynamicLanguages } from '../types'
@@ -23,17 +22,11 @@ export interface SettingsDrawerProps {
   onTogglePreview?: (voice: Voice, e?: React.MouseEvent) => void
   voicePrompt?: string
   onVoicePromptChange?: (val: string) => void
-  stability: number
-  similarity: number
-  cfgScale: number
   lavaSrEnabled: boolean
   activeLanguage: LanguageOption
   onSelectVoice: (id: string) => void
   onOpenCloneModal: () => void
   onOpenExplorerModal?: () => void
-  onStabilityChange: (val: number) => void
-  onSimilarityChange: (val: number) => void
-  onCfgScaleChange: (val: number) => void
   onToggleLavaSr: () => void
   onSelectLanguage: (lang: string) => void
 }
@@ -51,17 +44,11 @@ export function SettingsDrawer({
   onTogglePreview,
   voicePrompt = '',
   onVoicePromptChange,
-  stability,
-  similarity,
-  cfgScale,
   lavaSrEnabled,
   activeLanguage,
   onSelectVoice: _onSelectVoice,
   onOpenCloneModal,
   onOpenExplorerModal,
-  onStabilityChange,
-  onSimilarityChange,
-  onCfgScaleChange,
   onToggleLavaSr,
   onSelectLanguage,
 }: SettingsDrawerProps) {
@@ -69,12 +56,34 @@ export function SettingsDrawer({
   const languagesList = dynamicLanguages.length > 0 ? dynamicLanguages : LANGUAGES
 
   const cosyVoiceSuggestions = [
-    'Whispering softly with quiet emotional tears',
-    'Warm, calm, and soothing female voice with gentle pauses',
-    'Excited and energetic podcast host with crisp articulation',
-    'Authoritative cinematic narrator with deep resonant tone',
-    'Furious and breathless, speaking rapidly with high emotion',
-    'Robot-like synthesized delivery with steady monotonic cadence',
+    {
+      label: 'Warm & Smiling',
+      prompt: 'Please speak warmly with a gentle, friendly smile and approachable cadence.',
+    },
+    {
+      label: 'Cheerful Laugh',
+      prompt: 'Please speak with a cheerful laugh and joyful, amused inflection.',
+    },
+    {
+      label: 'Soft Whisper',
+      prompt: 'Please say a sentence in a very soft voice.',
+    },
+    {
+      label: 'Storyteller',
+      prompt: 'Please speak in a calm, articulate, engaging storytelling narration tone.',
+    },
+    {
+      label: 'Empathetic',
+      prompt: 'Please speak in a gentle, caring, empathetic, and reassuring tone.',
+    },
+    {
+      label: 'Podcast Host',
+      prompt: 'Please speak in a clear, energetic, conversational studio podcast host tone.',
+    },
+    {
+      label: 'Loud Projection',
+      prompt: 'Please say a sentence as loudly as possible.',
+    },
   ]
 
   const activeSuggestions = cosyVoiceSuggestions
@@ -215,23 +224,34 @@ export function SettingsDrawer({
           <div className="space-y-1.5 pt-0.5">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-medium text-zinc-500">
-                CosyVoice Instruct Presets:
+                CosyVoice 3 Instruct Presets:
               </span>
+              {voicePrompt && (
+                <button
+                  type="button"
+                  onClick={() => onVoicePromptChange?.('')}
+                  className="text-[10px] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  Reset to Zero-Shot
+                </button>
+              )}
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {activeSuggestions.map((suggestion) => (
+              {activeSuggestions.map((item) => (
                 <button
-                  key={suggestion}
+                  key={item.label}
                   type="button"
-                  onClick={() => onVoicePromptChange?.(suggestion)}
+                  onClick={() =>
+                    onVoicePromptChange?.(voicePrompt === item.prompt ? '' : item.prompt)
+                  }
                   className={cn(
                     'text-[10px] px-2 py-1 rounded-md border transition-all text-left truncate max-w-full cursor-pointer',
-                    voicePrompt === suggestion
+                    voicePrompt === item.prompt
                       ? 'border-zinc-400 bg-white/10 text-white font-medium'
                       : 'border-white/5 bg-white/[0.03] text-zinc-400 hover:border-white/15 hover:text-zinc-200 hover:bg-white/[0.06]'
                   )}
                 >
-                  {suggestion.split(' ').slice(0, 3).join(' ')}...
+                  {item.label}
                 </button>
               ))}
             </div>
@@ -239,72 +259,8 @@ export function SettingsDrawer({
         </div>
       </ExpandableContainer>
 
-      {/* VOICE PARAMETERS */}
-      <div className="space-y-5 pt-2 border-t border-[#1f1f23]">
-        <div className="text-[11px] font-medium text-zinc-400">
-          Voice Parameters
-        </div>
-
-        {/* Stability / Temperature Slider */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-zinc-300">Stability (Temperature)</span>
-            <span className="font-mono text-zinc-400">{stability.toFixed(2)}</span>
-          </div>
-          <Slider
-            value={[stability * 100]}
-            min={10}
-            max={150}
-            step={1}
-            onValueChange={(val) => onStabilityChange((val[0] || 70) / 100)}
-          />
-          <div className="flex justify-between text-[10px] text-zinc-500">
-            <span>Creative (1.2)</span>
-            <span>Robust (0.2)</span>
-          </div>
-        </div>
-
-        {/* Similarity / Reference Top-P Slider */}
-        <ExpandableContainer isExpanded={true}>
-          <div className="space-y-2 pb-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-zinc-300">Cloning Fidelity (Top-P)</span>
-              <span className="font-mono text-zinc-400">{similarity.toFixed(2)}</span>
-            </div>
-            <Slider
-              value={[similarity * 100]}
-              min={30}
-              max={100}
-              step={1}
-              onValueChange={(val) => onSimilarityChange((val[0] || 85) / 100)}
-            />
-            <div className="flex justify-between text-[10px] text-zinc-500">
-              <span>Low Variation</span>
-              <span>High Precision</span>
-            </div>
-          </div>
-        </ExpandableContainer>
-
-        {/* Emotion / Exaggeration CFG Scale Slider */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-zinc-300">Emotion Intensity (CFG Scale)</span>
-            <span className="font-mono text-zinc-400">{cfgScale.toFixed(1)}</span>
-          </div>
-          <Slider
-            value={[cfgScale * 10]}
-            min={10}
-            max={30}
-            step={1}
-            onValueChange={(val) => onCfgScaleChange((val[0] || 15) / 10)}
-          />
-          <div className="flex justify-between text-[10px] text-zinc-500">
-            <span>Subtle (1.0)</span>
-            <span>Standard (1.5)</span>
-            <span>Exaggerated (3.0)</span>
-          </div>
-        </div>
-
+      {/* AUDIO SETTINGS & LANGUAGE */}
+      <div className="space-y-4 pt-2 border-t border-[#1f1f23]">
         {/* Studio Voice Clarity Enhancer */}
         <ExpandableContainer isExpanded={true}>
           <div className="flex items-center justify-between py-1">

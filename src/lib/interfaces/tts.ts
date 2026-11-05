@@ -58,5 +58,5 @@ export interface TextToSpeechState {
   history: HistoryEntry[]
   historySearch: string
   playingHistoryId: string | null
-  rightPanelTab: 'settings' | 'history'
+  rightPanelTab?: 'settings' | 'history'
 }

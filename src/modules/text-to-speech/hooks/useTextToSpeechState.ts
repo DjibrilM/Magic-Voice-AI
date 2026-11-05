@@ -64,7 +64,6 @@ export const initialTextToSpeechState: TextToSpeechState = {
   lavaSrEnabled: true,
 
   // Right Drawer Tab & History
-  rightPanelTab: 'settings',
   history: INITIAL_HISTORY,
   historySearch: '',
   playingHistoryId: null,
