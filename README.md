@@ -1,4 +1,4 @@
-<p align="center">
+ <p align="center">
   <img src="./icon.png" alt="Magic-Voice AI Logo" width="128" height="128" />
 </p>
 
@@ -8,9 +8,14 @@
   <strong>Local, Private, Multi-Speaker Text-to-Speech Studio powered by CosyVoice 3</strong>
 </p>
 
+
+
+https://github.com/user-attachments/assets/7c207d17-8b4a-4854-a62a-074524a09ad2
+
+
 ---
 
-##  Overview
+## Overview
 
 **Magic-Voice AI** is an offline desktop Text-to-Speech (TTS) studio built with Electron, React, TypeScript, Tailwind CSS, and the `@qvac/sdk`. It is engineered specifically for local speech synthesis, voice design, zero-shot voice cloning, and multi-turn conversational script generation without cloud latency, tracking, or network dependencies.
 
@@ -18,20 +23,25 @@ Magic-Voice AI runs exclusively on **CosyVoice 3** (FunAudioLLM), offering conti
 
 ---
 
-##  Key Features
+## Key Features
 
 - **Exclusive CosyVoice 3 Engine**: Built from the ground up for CosyVoice 3 (0.5B LLM Backbone + Flow Matching Vocoder + S3Tok + CAM++ + Lava-SR Enhancer).
+
 - **GPU & CPU Hardware Inference Switch**:
   - **GPU (Metal)**: Enabled by default, leveraging Apple Silicon Metal shaders for accelerated real-time synthesis.
   - **CPU**: Fallback standard thread processing when dedicated GPU compute is reserved or disabled.
   - Persistent user preference saved across app restarts and dynamically respected when loading model weights.
+
 - **Instant Zero-Shot Voice Cloning**: Clone reference voices from custom audio files (WAV, MP3, AAC) or microphone recordings using deep CAM++ speaker embeddings.
+
 - **Multi-Speaker Conversational Turn Generation**: Script dialogues between multiple characters with independent pacing, emotions, pre/post pauses, and crossfaded room tone.
+
 - **Conversational Reaction & Tone Tags**:
   - `[whisper]`: Soft voice delivery padded with gentle breath pauses.
   - `[yell]` or `[loud]`: Forceful, elevated dynamic projection with anger emotion injection.
   - `[raise]` or `[emphasis]`: Natural pitch accentuation via native CosyVoice `<strong>` tagging.
   - `[breath]`, `[sigh]`, `[gasp]`: Sub-second respiration pauses via native `<breath>` tagging.
+
 - **iOS-Inspired Settings & Storage**:
   - Slim multi-segment storage progress bar (`h-1.5`) breaking down installed models and saved audio media.
   - Clean monochromatic white iconography across all cards and controls.
@@ -40,7 +50,7 @@ Magic-Voice AI runs exclusively on **CosyVoice 3** (FunAudioLLM), offering conti
 
 ---
 
-##  Neural Model Suite (CosyVoice 3)
+## Neural Model Suite (CosyVoice 3)
 
 The application utilizes 5 models:
 
@@ -57,6 +67,7 @@ The application utilizes 5 models:
 ## Hardware Inference Compute Device (GPU vs CPU)
 
 Magic-Voice AI supports dynamic hardware device selection:
+
 - **Default Device**: **GPU** (Apple Silicon Metal).
 - **Configuration Persistence**: Stored in `userData/magic-voice-settings.json`.
 - **Model Loading Integration**: When `qvacSdk.loadModel` is invoked, `useGPU: inferenceDevice === 'gpu'` is evaluated.
@@ -67,10 +78,12 @@ Magic-Voice AI supports dynamic hardware device selection:
 ## Development & Build
 
 ### Prerequisites
+
 - macOS (Apple Silicon M1/M2/M3/M4 recommended) or Windows (x64)
 - Node.js 18+ & npm
 
 ### Setup & Packaging
+
 ```bash
 # Clone the repository
 git clone https://github.com/your-username/Magic-Voice-ai.git
@@ -99,7 +112,7 @@ npm run build:win
 
 ## Project Architecture
 
-```
+```text
 Magic-Voice-ai/
 ├── icon.png                   # Application logo
 ├── electron/                  # Electron Main Process & Clean Core Architecture
