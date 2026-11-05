@@ -10,7 +10,7 @@
 
 ---
 
-## Overview
+##  Overview
 
 **Magic-Voice AI** is an offline desktop Text-to-Speech (TTS) studio built with Electron, React, TypeScript, Tailwind CSS, and the `@qvac/sdk`. It is engineered specifically for local speech synthesis, voice design, zero-shot voice cloning, and multi-turn conversational script generation without cloud latency, tracking, or network dependencies.
 
@@ -18,7 +18,7 @@ Magic-Voice AI runs exclusively on **CosyVoice 3** (FunAudioLLM), offering conti
 
 ---
 
-## Key Features
+##  Key Features
 
 - **Exclusive CosyVoice 3 Engine**: Built from the ground up for CosyVoice 3 (0.5B LLM Backbone + Flow Matching Vocoder + S3Tok + CAM++ + Lava-SR Enhancer).
 - **GPU & CPU Hardware Inference Switch**:
@@ -40,7 +40,7 @@ Magic-Voice AI runs exclusively on **CosyVoice 3** (FunAudioLLM), offering conti
 
 ---
 
-## Model Suite (CosyVoice 3)
+##  Neural Model Suite (CosyVoice 3)
 
 The application utilizes 5 models:
 
